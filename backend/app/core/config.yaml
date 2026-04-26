@@ -1,0 +1,95 @@
+project:
+  name: GitExplore
+  version: 1.0.0
+  seed: 42
+
+ingestion:
+  supported_extensions:
+    - .py
+    - .js
+    - .ts
+    - .java
+    - .go
+    - .rs
+    - .cpp
+  skip_dirs:
+    - node_modules
+    - .git
+    - build
+    - dist
+    - __pycache__
+    - venv
+
+chunking:
+  strategy: "ast"
+  fallback_chunk_size: 200
+  fallback_overlap: 20
+  max_chunk_tokens: 1000
+  min_chunk_length: 50
+
+embedding:
+  provider: "ollama"
+  model_name: "nomic-embed-text"
+  batch_size: 32
+  normalize: true
+
+vector_db:
+  host: "localhost"
+  port: 6333
+  collection_prefix: "gitexplore"
+  top_k: 20
+
+bm25:
+  top_k: 20
+
+hybrid:
+  rrf_k: 60
+  final_top_k: 10
+
+reranker:
+  enabled: false
+  model_name: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+  top_k: 5
+
+query:
+  classify: true
+  types:
+    - explain_code
+    - find_function
+    - debug
+    - architecture
+
+generation:
+  provider: "ollama"
+  model_name: "mistral:7b"
+  temperature: 0.2
+  num_predict: 1024
+  context_budget_tokens: 1200
+  conversation_history_turns: 5
+
+graph:
+  enabled: true
+  hop_depth: 1
+  trigger_on:
+    - architecture
+    - explain_code
+
+self_eval:
+  enabled: true
+  threshold: 0.6
+  eval_model: "mistral:7b"
+
+evaluation:
+  metrics:
+    - recall@5
+    - precision@5
+    - mrr@10
+  compare_modes:
+    - dense_only
+    - bm25_only
+    - hybrid
+
+logging:
+  level: DEBUG
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  save_logs: true
