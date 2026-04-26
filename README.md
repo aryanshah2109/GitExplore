@@ -1,0 +1,2 @@
+# GitExplore
+An intelligent GitHub RAG system that lets you query any codebase in natural language. Combines structure-aware chunking, hybrid retrieval, and LLM-powered reasoning to return accurate, explainable answers with exact source references.
