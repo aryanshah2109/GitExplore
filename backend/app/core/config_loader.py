@@ -1,5 +1,5 @@
 import yaml
-from app.core.path_constants import CONFIG_PATH
+from backend.app.core.path_constants import CONFIG_PATH
 
 
 class Config:

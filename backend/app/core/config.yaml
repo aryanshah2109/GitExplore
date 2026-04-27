@@ -93,3 +93,4 @@ logging:
   level: DEBUG
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
   save_logs: true
+  name: gitexplore

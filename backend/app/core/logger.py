@@ -2,51 +2,54 @@ import logging
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 
-from app.core.config_loader import config
-from app.core.path_constants import LOGS_PATH, MAX_LOG_SIZE
+from backend.app.core.config_loader import config
+from backend.app.core.path_constants import LOGS_PATH, MAX_LOG_SIZE
 
-LOGS_PATH.mkdir(parents=True, exist_ok=True)
+LOG_NAME = getattr(config.logging, "name", "gitexplore")
 
-LOG_LEVEL = getattr(logging, config.logging.level)
-LOG_FORMAT = logging.Formatter(config.logging.format)
-LOG_FILE = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
 
-log_file_path = LOGS_PATH / LOG_FILE
+def get_logger():
+    return logging.getLogger(LOG_NAME)
+
 
 def configure_logger():
-    """
-    Function to configure logger so as to enable logging via console handler and file handler.
-    """
-
     try:
-        logging.info("Creating and setting up logger object")
+        # create logs directory
+        LOGS_PATH.mkdir(parents=True, exist_ok=True)
 
-        # initiate logger
-        logger = logging.getLogger("VeriLearn")
+        logger = logging.getLogger(LOG_NAME)
+
+        LOG_LEVEL = getattr(logging, config.logging.level.upper(), logging.INFO)
+        LOG_FORMAT = logging.Formatter(config.logging.format)
+
         logger.setLevel(LOG_LEVEL)
 
-        # remove existing handlers
+        # clear existing handlers
         if logger.hasHandlers():
             logger.handlers.clear()
 
-        # console loggers
-        console_logger = logging.StreamHandler()
-        console_logger.setLevel(LOG_LEVEL)
+        # console handler
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(LOG_LEVEL)
+        console_handler.setFormatter(LOG_FORMAT)
 
-        # file logger
-        file_logger = RotatingFileHandler(log_file_path, maxBytes=MAX_LOG_SIZE)
-        file_logger.setLevel(LOG_LEVEL)
+        # file handler
+        log_file = LOGS_PATH / f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
 
-        # set formatters
-        console_logger.setFormatter(LOG_FORMAT)
-        file_logger.setFormatter(LOG_FORMAT)
+        file_handler = RotatingFileHandler(
+            log_file,
+            maxBytes=MAX_LOG_SIZE,
+            backupCount=5
+        )
+        file_handler.setLevel(LOG_LEVEL)
+        file_handler.setFormatter(LOG_FORMAT)
 
-        # add handlers
-        logger.addHandler(console_logger)
-        logger.addHandler(file_logger)
+        # attach handlers
+        logger.addHandler(console_handler)
+        logger.addHandler(file_handler)
+
+        logger.info("Logger configured successfully")
 
     except Exception as e:
-        logging.error(f"Error while creating logger object : {e}")
+        logging.error(f"Error while creating logger object: {e}")
         raise
-
-configure_logger()
