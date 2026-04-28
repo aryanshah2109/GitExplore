@@ -22,6 +22,7 @@ def configure_logger():
         LOG_LEVEL = getattr(logging, config.logging.level.upper(), logging.INFO)
         LOG_FORMAT = logging.Formatter(config.logging.format)
 
+        # set logger level
         logger.setLevel(LOG_LEVEL)
 
         # clear existing handlers
@@ -41,6 +42,7 @@ def configure_logger():
             maxBytes=MAX_LOG_SIZE,
             backupCount=5
         )
+        
         file_handler.setLevel(LOG_LEVEL)
         file_handler.setFormatter(LOG_FORMAT)
 
