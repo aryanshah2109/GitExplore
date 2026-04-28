@@ -19,6 +19,11 @@ ingestion:
     - dist
     - __pycache__
     - venv
+    - .github
+  skip_files:
+    - package-lock.json
+    - yarn.lock
+  max_size_file: 500_000
 
 chunking:
   strategy: "ast"
