@@ -12,6 +12,7 @@ from backend.app.core.logger import get_logger
 logger = get_logger()
 
 class FileFilter:
+
     """
         Class that selects correct cloned repository from local storage and decides which files and folders to
         skip based on file extensions, folder types, size of files, etc.        
@@ -23,13 +24,14 @@ class FileFilter:
         self.skip_files = config.ingestion.skip_files
         self.max_size_file = config.ingestion.max_size_file
     
-    def should_include(self, saved_file_path: str) -> bool:
+    def should_include_filter(self, saved_file_path: str) -> bool:
+
         """
             Filters files and folders and Returns True if the file should be processed further in the ingestion pipeline 
             and False if it should not be included. This will later be used to create manifests useful for chunking.
 
             Input: saved_file_path (str)
-            Output: should_include (bool)
+            Output: include (bool)
         """
         
         logger.info(f"Filtering {saved_file_path} to decide whether it will be useful or not")
