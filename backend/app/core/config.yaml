@@ -12,6 +12,8 @@ ingestion:
     - .go
     - .rs
     - .cpp
+    - .c
+    - .cs
   skip_dirs:
     - node_modules
     - .git
@@ -24,6 +26,18 @@ ingestion:
     - package-lock.json
     - yarn.lock
   max_size_file: 500_000
+  language_detection:
+    .txt: text
+    .py: python
+    .js: javascript
+    .ts: typescript
+    .java: java
+    .go: go
+    .rs: rust
+    .cpp: cpp
+    .c: c
+    .cs: csharp 
+
 
 chunking:
   strategy: "ast"

@@ -25,6 +25,27 @@ class Config:
             return Config(value)
         return value
 
+    def items(self):
+        return self._data.items()
+
+    def keys(self):
+        return self._data.keys()
+
+    def values(self):
+        return self._data.values()
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __getitem__(self, key):
+        value = self._data[key]
+        if isinstance(value, dict):
+            return Config(value)
+        return value
+
+    def to_dict(self):
+        return self._data
+
     def __repr__(self):
         return f"Config({list(self._data.keys())})"
 

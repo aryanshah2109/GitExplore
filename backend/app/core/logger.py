@@ -3,9 +3,9 @@ from datetime import datetime
 from logging.handlers import RotatingFileHandler
 
 from backend.app.core.config_loader import config
-from backend.app.core.path_constants import LOGS_PATH, MAX_LOG_SIZE
+from backend.app.core.path_constants import LOGS_DIR, MAX_LOG_SIZE
 
-LOG_NAME = getattr(config.logging, "name", "gitexplore")
+LOG_NAME = config.get("logging").get("name", "gitexplore")
 
 
 def get_logger():
@@ -15,7 +15,7 @@ def get_logger():
 def configure_logger():
     try:
         # create logs directory
-        LOGS_PATH.mkdir(parents=True, exist_ok=True)
+        LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
         logger = logging.getLogger(LOG_NAME)
 
@@ -35,7 +35,7 @@ def configure_logger():
         console_handler.setFormatter(LOG_FORMAT)
 
         # file handler
-        log_file = LOGS_PATH / f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
+        log_file = LOGS_DIR / f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
 
         file_handler = RotatingFileHandler(
             log_file,
