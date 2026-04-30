@@ -36,11 +36,11 @@ class RepoCloner:
         """
         
         logger.info(f"[{self.repo_id}] Cloning repo from {self.repository_url}")
-        logger.debug(f"Repo will be stored at {self.path_to_repo}")
 
         try:
 
             if not self.repository_url.startswith("https://github.com/"):
+                logger.error(f"Invalid Github repository URL: {self.repository_url}")
                 raise ValueError("Invalid GitHub repository URL")
             
             if any(self.path_to_repo.iterdir()):
@@ -50,7 +50,7 @@ class RepoCloner:
                     "repo_path": str(self.path_to_repo),
                     "status": "already_exists"
                 }
-
+            
             Repo.clone_from(
                 url = self.repository_url,
                 to_path = self.path_to_repo,
