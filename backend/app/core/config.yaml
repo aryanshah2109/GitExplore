@@ -4,40 +4,188 @@ project:
   seed: 42
 
 ingestion:
+
   supported_extensions:
+    # Core languages
     - .py
     - .js
     - .ts
+    - .jsx
+    - .tsx
     - .java
     - .go
     - .rs
     - .cpp
+    - .cc
+    - .cxx
     - .c
+    - .h
+    - .hpp
     - .cs
+    - .php
+    - .rb
+    - .swift
+    - .kt
+    - .scala
+    - .r
+    - .lua
+    - .dart
+
+    # Frontend / web
+    - .html
+    - .css
+    - .scss
+    - .sass
+    - .less
+
+    # Config / infra
+    - .json
+    - .yaml
+    - .yml
+    - .toml
+    - .ini
+    - .env
+    - .conf
+
+    # Shell / scripts
+    - .sh
+    - .bash
+    - .zsh
+    - .ps1
+    - .bat
+
+    # Docs / text
+    - .txt
+    - .md
+    - .rst
+
+    # SQL
+    - .sql
+
+    # Special extensionless files
+    - dockerfile
+    - makefile
+    - procfile
+
   skip_dirs:
-    - node_modules
     - .git
+    - .github
+    - .idea
+    - .vscode
+
+    - node_modules
+    - vendor
+    - target
     - build
     - dist
+    - out
+
     - __pycache__
+    - .pytest_cache
+    - .mypy_cache
+
     - venv
-    - .github
+    - .venv
+    - env
+
+    - coverage
+    - htmlcov
+
+    - logs
+    - tmp
+    - temp
+
+    - migrations
+
+    - .next
+    - .nuxt
+
+    - public/build
+
   skip_files:
     - package-lock.json
     - yarn.lock
+    - pnpm-lock.yaml
+
+    - poetry.lock
+    - Pipfile.lock
+
+    - .DS_Store
+    - Thumbs.db
+
   max_size_file: 500_000
+
   language_detection:
-    .txt: text
+
+    # Python
     .py: python
+
+    # JavaScript / TypeScript
     .js: javascript
+    .jsx: javascriptreact
     .ts: typescript
+    .tsx: typescriptreact
+
+    # JVM
     .java: java
+    .kt: kotlin
+    .scala: scala
+
+    # Systems
     .go: go
     .rs: rust
-    .cpp: cpp
     .c: c
-    .cs: csharp 
+    .h: c
+    .cpp: cpp
+    .cc: cpp
+    .cxx: cpp
+    .hpp: cpp
 
+    # Microsoft
+    .cs: csharp
+
+    # Web
+    .html: html
+    .css: css
+    .scss: scss
+    .sass: sass
+    .less: less
+
+    # Backend
+    .php: php
+    .rb: ruby
+
+    # Mobile
+    .swift: swift
+    .dart: dart
+
+    # Data / config
+    .json: json
+    .yaml: yaml
+    .yml: yaml
+    .toml: toml
+    .ini: ini
+    .env: env
+
+    # Shell
+    .sh: shell
+    .bash: shell
+    .zsh: shell
+    .ps1: powershell
+    .bat: batch
+
+    # Docs
+    .txt: text
+    .md: markdown
+    .rst: rst
+
+    # Database
+    .sql: sql
+
+    # Infra
+    dockerfile: dockerfile
+    makefile: makefile
+    procfile: procfile
 
 chunking:
   strategy: "ast"
