@@ -44,8 +44,12 @@ class FileFilter:
             if file_path.name.startswith("."):
                 logger.debug(f"{relative_path} is a hidden item.")
                 return False
+            extension = file_path.suffix.lower()
 
-            if file_path.suffix.lower() not in self.supported_extensions:
+            if not extension:
+                extension = file_path.name.lower()
+
+            if extension not in self.supported_extensions:            
                 logger.debug(f"{relative_path} is not a valid code path based on allowed extensions.")
                 return False
 

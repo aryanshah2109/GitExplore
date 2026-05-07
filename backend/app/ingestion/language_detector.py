@@ -24,7 +24,7 @@ class LanguageDetector:
 
     def detect_language(self, file_path: Path, repo_root: Path) -> str:
         try:
-
+            
             relative_path = file_path.relative_to(repo_root)
 
             if file_path.is_file():
@@ -32,12 +32,11 @@ class LanguageDetector:
                 extension = file_path.suffix.lower()
 
                 if not extension:
-                    logger.info(f"Extension not found in {relative_path}")
-                    return "unknown"
+                    extension = file_path.name.lower()
 
                 language = self.extension_map.get(extension)
                 if language:                    
-                    logger.debug(f"{relative_path} = {language}")
+                    logger.debug(f"{relative_path} : {language}")
                     return language
             
                 logger.info(f"Could not find appropriate language from extension map")

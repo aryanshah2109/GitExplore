@@ -5,6 +5,7 @@
 # Imports
 from git import Repo
 from uuid import uuid4
+import shutil
 
 from backend.app.core.config_loader import config
 from backend.app.core.path_constants import REPOS_DIR
@@ -43,14 +44,6 @@ class RepoCloner:
                 logger.error(f"Invalid Github repository URL: {self.repository_url}")
                 raise ValueError("Invalid GitHub repository URL")
             
-            if any(self.path_to_repo.iterdir()):
-                logger.warning("Repo already exists. Skipping clone.")
-                return {
-                    "repo_id": self.repo_id,
-                    "repo_path": str(self.path_to_repo),
-                    "status": "already_exists"
-                }
-            
             Repo.clone_from(
                 url = self.repository_url,
                 to_path = self.path_to_repo,
@@ -68,5 +61,10 @@ class RepoCloner:
             }
 
         except Exception as e:
+
+            # cleanup partial clone
+            if self.path_to_repo.exists():
+                shutil.rmtree(self.path_to_repo, ignore_errors=True)
+   
             logger.error(f"Error while cloning repository: {e}")
             raise RuntimeError(f"Failed to clone repo: {e}")
