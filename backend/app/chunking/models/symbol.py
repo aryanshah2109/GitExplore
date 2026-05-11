@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 
 @dataclass
@@ -9,44 +9,44 @@ class Symbol:
     symbol_kind: str
 
     name: str
-    signature: Optional[str]
+    signature: Optional[str] = None
 
-    language: str
-    file_path: str
-    module_path: Optional[str]
+    language: str = ""
+    file_path: str = ""
+    module_path: Optional[str] = None
 
-    parent_class: Optional[str]
+    parent_class: Optional[str] = None
 
-    visibility: Optional[str]
+    visibility: Optional[str] = None
 
     is_async: bool = False
 
-    inherits: Optional[List[str]]
+    inherits: Optional[List[str]] = field(default_factory=list)
 
-    start_line: int
-    end_line: int
+    start_line: int = 0
+    end_line: int = 0
 
-    start_byte: int
-    end_byte: int
+    start_byte: int = 0
+    end_byte: int = 0
 
-    parameters: Optional[List[str]]
+    parameters: Optional[List[str]] = field(default_factory=list)
 
-    return_type: Optional[str]
+    return_type: Optional[str] = None
 
-    imports: Optional[List[str]]
+    imports: Optional[List[str]] = field(default_factory=list)
 
-    function_calls: Optional[List[str]]
+    function_calls: Optional[List[str]] = field(default_factory=list)
 
-    relationships: Optional[Dict[str, List[str]]]
+    relationships: Optional[Dict[str, List[str]]] = field(default_factory=dict)
 
-    docstring: Optional[str]
+    docstring: Optional[str] = None
 
-    decorators: Optional[List[str]]
+    decorators: Optional[List[str]] = field(default_factory=list)
 
-    token_count: Optional[int]
+    token_count: Optional[int] = None
 
-    embedding_text: Optional[str]
+    embedding_text: Optional[str] = None
 
-    children: Optional[List[str]]
+    children: Optional[List[str]] = field(default_factory=list)
 
-    code: str
+    code: str = ""

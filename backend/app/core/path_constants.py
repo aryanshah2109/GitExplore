@@ -10,6 +10,7 @@ MAX_LOG_SIZE = 10 * 1024 * 1024  # 10 MB
 REPOS_DIR = ROOT_DIR / "data" / "repos"
 MANIFESTS_DIR = ROOT_DIR / "data" / "manifests"
 CHUNKS_DIR = ROOT_DIR / "data" / "chunks"
+SYMBOLS_DIR = ROOT_DIR / "data" / "symbols"
 EMBEDDINGS_DIR = ROOT_DIR / "data" / "embeddings"
 BM25_DIR = ROOT_DIR / "data" / "bm25"
 
