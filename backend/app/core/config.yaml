@@ -189,7 +189,7 @@ ingestion:
 
 chunking:
   strategy: "ast"
-  fallback_chunk_size: 200
+  fallback_chunk_size: 1200
   fallback_overlap: 20
   max_chunk_tokens: 1000
   min_chunk_length: 50

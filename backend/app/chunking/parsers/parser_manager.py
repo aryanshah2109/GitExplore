@@ -2,26 +2,44 @@ from tree_sitter_languages import get_parser
 
 from backend.app.core.logger import get_logger
 
+
 logger = get_logger()
+
 
 class ParserManager:
     """
-        Class to add global parsers registry for all languages
+    Global Tree-sitter parser cache.
     """
 
-    def __init__(self):
-        self.parsers = {}
+    _parsers = {}
 
-    def get_language_parser(self, language: str):
+    @classmethod
+    def get_parser(
+        cls,
+        language: str
+    ):
         """
-            Returns a parser of given language stored in global registry
-            Input: language (str)
-            Output: Parser of given language
-        """
-        
-        logger.debug(f"Fetching {language}'s parser")
+        Returns cached Tree-sitter parser.
 
-        if language not in self.parsers:
-            self.parsers[language] = get_parser(language)
-        
-        return self.parsers[language]
+        Input:
+            language: str
+
+        Output:
+            Parser
+        """
+
+        logger.debug(
+            f"Fetching parser for: {language}"
+        )
+
+        if language not in cls._parsers:
+
+            logger.debug(
+                f"Creating new parser for: {language}"
+            )
+
+            cls._parsers[language] = (
+                get_parser(language)
+            )
+
+        return cls._parsers[language]

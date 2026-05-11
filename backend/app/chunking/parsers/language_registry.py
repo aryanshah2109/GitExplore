@@ -6,15 +6,16 @@ from backend.app.chunking.language_extractors.java_extractor import JavaExtracto
 from backend.app.chunking.language_extractors.go_extractor import GoExtractor
 from backend.app.chunking.language_extractors.rust_extractor import RustExtractor
 from backend.app.chunking.language_extractors.typescript_extractor import TSExtractor
+from backend.app.chunking.language_extractors.fallback_extractor import FallbackExtractor
 
 
 LANGUAGE_REGISTRY = {
     "c": {
-        "extensions": [".c"],
+        "extensions": [".c", ".h"],
         "extractor": CExtractor
     },
     "cpp": {
-        "extensions": [".cpp"],
+        "extensions": [".cpp", ".cc", ".cxx", ".hpp"],
         "extractor": CPPExtractor
     },
     "go": {
@@ -43,3 +44,19 @@ LANGUAGE_REGISTRY = {
     },
 
 }
+
+
+def get_extractor(extension: str):
+    normalized_extension = (extension or "").lower()
+    if normalized_extension and not normalized_extension.startswith("."):
+        normalized_extension = f".{normalized_extension}"
+
+    for language_config in LANGUAGE_REGISTRY.values():
+        extractor = language_config["extractor"]
+        if (
+            normalized_extension in language_config["extensions"]
+            and hasattr(extractor, "extract_symbols")
+        ):
+            return extractor
+
+    return FallbackExtractor

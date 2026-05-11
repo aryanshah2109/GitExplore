@@ -93,7 +93,7 @@ class ManifestBuilder:
 
                 self.manifest["files"].append({
                     "file_id": str(uuid4()),
-                    "file_path": relative_file_path,
+                    "file_name": relative_file_path,
                     "language": detected_language,
                     "extension": file_path.suffix.lower(),
                     "file_size": file_path.stat().st_size
