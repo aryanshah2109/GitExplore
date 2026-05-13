@@ -16,6 +16,8 @@ class Symbol:
     module_path: Optional[str] = None
 
     parent_class: Optional[str] = None
+    
+    qualified_name: Optional[str] = None
 
     visibility: Optional[str] = None
 
