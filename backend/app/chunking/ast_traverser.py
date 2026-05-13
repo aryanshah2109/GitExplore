@@ -71,7 +71,7 @@ class ASTTraverser:
                     f"Creating symbols for file: {file_name}"
                 )
 
-                symbols = extractor.extract_symbols(file_path)
+                symbols = extractor.extract_symbols(file_path, repo_root)
 
                 relative_parent = Path(file_name).parent
 
