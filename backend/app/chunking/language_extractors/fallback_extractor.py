@@ -6,6 +6,7 @@
 from pathlib import Path
 from typing import List
 from uuid import uuid4
+from typing import Optional
 
 from backend.app.chunking.models.symbol import Symbol
 
@@ -74,7 +75,8 @@ class FallbackExtractor:
 
     def extract_symbols(
         self,
-        file_path: Path
+        file_path: Path,
+        repo_root: Optional[Path] = None
     ) -> List[Symbol]:
         """
         Extracts text chunks as semantic symbols.
@@ -152,6 +154,7 @@ class FallbackExtractor:
             )
 
             return []
+        
 
     def _create_document_symbol(
         self,
@@ -239,11 +242,12 @@ class FallbackExtractor:
                 chunk
             ),
 
-            embedding_text=(
-                self._build_embedding_text(
-                    file_path=file_path,
-                    chunk=chunk
-                )
+            embedding_text=self._build_embedding_text(
+                file_path=file_path,
+                symbol_kind="document",
+                name=f"{file_path.name}_chunk_{chunk_index}",
+                parent_class=None,
+                code=chunk
             ),
 
             children=[],
@@ -409,26 +413,29 @@ class FallbackExtractor:
     def _build_embedding_text(
         self,
         file_path: Path,
-        chunk: str
+        symbol_kind: str,
+        name: str,
+        parent_class: Optional[str],
+        code: str
     ) -> str:
         """
-        Builds embedding text with context prefix.
-
-        Input:
-            file_path: Path
-            chunk: str
-
-        Output:
-            str
+        Builds embedding text with metadata prefix.
         """
 
-        prefix = (
-            f"File: {file_path.name}\n"
-            f"Path: {file_path}\n"
-            f"Chunk Type: document\n\n"
-        )
+        prefix_parts = [
+            f"File: {file_path.name}",
+            f"Type: {symbol_kind}",
+            f"Name: {name}"
+        ]
 
-        return prefix + chunk
+        if parent_class:
+            prefix_parts.append(
+                f"Class: {parent_class}"
+            )
+
+        prefix = " | ".join(prefix_parts)
+
+        return f"{prefix}\n\n{code}"
 
     def _build_symbol_id(
         self,

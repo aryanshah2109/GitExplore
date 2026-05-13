@@ -17,8 +17,6 @@ class PyExtractor(TreeSitterExtractor):
         "function_definition",
     }
     symbol_kind_by_node_type = {
-        "import_statement": "import",
-        "import_from_statement": "import",
         "class_definition": "class",
         "function_definition": "function",
     }

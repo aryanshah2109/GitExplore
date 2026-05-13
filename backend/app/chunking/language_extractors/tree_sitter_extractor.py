@@ -22,43 +22,50 @@ class TreeSitterExtractor:
 
     language: str = ""
     parser_language: str = ""
+
     import_node_types: Set[str] = set()
+
     class_node_types: Set[str] = set()
+
     function_node_types: Set[str] = set()
+
     decorator_node_types: Set[str] = {
         "decorator",
         "annotation",
         "modifiers",
         "attribute_item",
     }
+
     call_node_types: Set[str] = {
         "call",
         "call_expression",
     }
-    symbol_kind_by_node_type: Dict[str, str] = {}
 
-    def __init__(self):
-        pass
+    symbol_kind_by_node_type: Dict[str, str] = {}
 
     def extract_symbols(
         self,
-        file_path: Path
+        file_path: Path,
+        repo_root: Optional[Path] = None
     ) -> List[Symbol]:
-        """
-        Parses a source file and extracts import/type/function symbols.
-        """
 
         try:
+
             logger.info(
                 f"Extracting {self.language} symbols from file: {file_path}"
             )
 
             source_code = file_path.read_bytes()
+
             parser = ParserManager.get_parser(
                 self._parser_language_for_file(file_path)
             )
+
             tree = parser.parse(source_code)
+
             symbols: List[Symbol] = []
+
+            file_imports: List[str] = []
 
             self._traverse_tree(
                 node=tree.root_node,
@@ -66,20 +73,60 @@ class TreeSitterExtractor:
                 symbols=symbols,
                 file_path=file_path,
                 parent_class=None,
-                file_imports=[],
-                decorators=[]
+                file_imports=file_imports,
+                decorators=[],
+                repo_root=repo_root
             )
+
+            module_symbol = self._build_module_symbol(
+                tree=tree,
+                source_code=source_code,
+                file_path=file_path,
+                file_imports=file_imports,
+                repo_root=repo_root
+            )
+
+            if module_symbol:
+                symbols.insert(0, module_symbol)
+
+            # Remove invalid symbols
+            valid_symbols = []
+
+            seen_ids = set()
+
+            for symbol in symbols:
+
+                if not symbol.embedding_text:
+                    continue
+
+                if not isinstance(symbol.embedding_text, str):
+                    continue
+
+                if not symbol.embedding_text.strip():
+                    continue
+
+                if symbol.symbol_id in seen_ids:
+                    continue
+
+                seen_ids.add(symbol.symbol_id)
+
+                valid_symbols.append(symbol)
 
             logger.info(
-                f"Extracted {len(symbols)} symbols from {file_path.name}"
+                f"Extracted {len(valid_symbols)} symbols "
+                f"from {file_path.name}"
             )
 
-            return symbols
+            return valid_symbols
 
         except Exception:
+
             logger.exception(
-                f"Error extracting {self.language} symbols from {file_path}"
+                f"Error extracting "
+                f"{self.language} symbols "
+                f"from {file_path}"
             )
+
             return []
 
     def _traverse_tree(
@@ -90,15 +137,19 @@ class TreeSitterExtractor:
         file_path: Path,
         parent_class: Optional[str],
         file_imports: List[str],
-        decorators: List[str]
+        decorators: List[str],
+        repo_root: Optional[Path]
     ) -> None:
+
         if node.type == "decorated_definition":
+
             definition_decorators = self._extract_decorators(
                 node=node,
                 source_code=source_code
             )
 
             for child in node.children:
+
                 if child.type in self.decorator_node_types:
                     continue
 
@@ -109,35 +160,34 @@ class TreeSitterExtractor:
                     file_path=file_path,
                     parent_class=parent_class,
                     file_imports=file_imports,
-                    decorators=definition_decorators
+                    decorators=definition_decorators,
+                    repo_root=repo_root
                 )
 
             return
 
         symbol_kind = self._symbol_kind_for_node(node)
+
         next_parent_class = parent_class
 
+        # Collect imports only as metadata
         if node.type in self.import_node_types:
+
             import_text = self._get_node_text(
                 node=node,
                 source_code=source_code
             ).strip()
-            if import_text:
+
+            if (
+                import_text
+                and import_text not in file_imports
+            ):
                 file_imports.append(import_text)
 
-            symbols.append(
-                self._build_symbol(
-                    node=node,
-                    source_code=source_code,
-                    file_path=file_path,
-                    symbol_kind="import",
-                    parent_class=None,
-                    file_imports=file_imports,
-                    decorators=[]
-                )
-            )
+            return
 
         elif node.type in self.class_node_types:
+
             symbol = self._build_symbol(
                 node=node,
                 source_code=source_code,
@@ -145,12 +195,16 @@ class TreeSitterExtractor:
                 symbol_kind=symbol_kind,
                 parent_class=None,
                 file_imports=file_imports,
-                decorators=decorators
+                decorators=decorators,
+                repo_root=repo_root
             )
+
             symbols.append(symbol)
+
             next_parent_class = symbol.name
 
         elif node.type in self.function_node_types:
+
             symbols.append(
                 self._build_symbol(
                     node=node,
@@ -159,11 +213,13 @@ class TreeSitterExtractor:
                     symbol_kind=symbol_kind,
                     parent_class=parent_class,
                     file_imports=file_imports,
-                    decorators=decorators
+                    decorators=decorators,
+                    repo_root=repo_root
                 )
             )
 
         for child in node.children:
+
             self._traverse_tree(
                 node=child,
                 source_code=source_code,
@@ -171,7 +227,8 @@ class TreeSitterExtractor:
                 file_path=file_path,
                 parent_class=next_parent_class,
                 file_imports=file_imports,
-                decorators=[]
+                decorators=[],
+                repo_root=repo_root
             )
 
     def _build_symbol(
@@ -182,90 +239,255 @@ class TreeSitterExtractor:
         symbol_kind: str,
         parent_class: Optional[str],
         file_imports: List[str],
-        decorators: List[str]
+        decorators: List[str],
+        repo_root: Optional[Path] = None,
     ) -> Symbol:
+
         code = self._get_node_text(
             node=node,
             source_code=source_code
         )
-        fallback_name = code.splitlines()[0].strip() if code else node.type
-        if symbol_kind == "import":
-            name = fallback_name
-        else:
-            name = self._extract_name(
-                node=node,
-                source_code=source_code,
-                fallback=fallback_name
-            )
 
-        if symbol_kind == "function" and parent_class:
+        fallback_name = (
+            code.splitlines()[0].strip()
+            if code
+            else node.type
+        )
+
+        name = self._extract_name(
+            node=node,
+            source_code=source_code,
+            fallback=fallback_name
+        )
+
+        if (
+            symbol_kind == "function"
+            and parent_class
+        ):
             symbol_kind = "method"
 
+        token_count = self._estimate_tokens(code)
+        embedding_text = self._build_embedding_text(
+            file_path=file_path,
+            symbol_kind=symbol_kind,
+            name=name,
+            parent_class=parent_class,
+            code=code
+        )
+
         return Symbol(
+
             symbol_id=self._build_symbol_id(
                 symbol_kind=symbol_kind,
                 symbol_name=name,
-                start_line=node.start_point[0] + 1
+                start_line=node.start_point[0] + 1,
+                module_path=self._build_module_path(
+                    file_path,
+                    repo_root
+                ),
+                qualified_name=self._build_qualified_name(
+                    name=name,
+                    parent_class=parent_class
+                )
             ),
+
             symbol_kind=symbol_kind,
+
             name=name,
+
+            qualified_name=self._build_qualified_name(
+                name=name,
+                parent_class=parent_class
+            ),
+
             signature=self._extract_signature(
                 node=node,
                 source_code=source_code
             ),
+
             language=self.language,
+
             file_path=str(file_path),
-            parent_class=parent_class if symbol_kind == "method" else None,
+
+            module_path=self._build_module_path(file_path, repo_root),
+            token_count=token_count,
+            embedding_text=embedding_text,
+
+            parent_class=(
+                parent_class
+                if symbol_kind == "method"
+                else None
+            ),
+
             is_async=self._node_contains_child_type(
                 node=node,
                 child_type="async"
             ),
+
             inherits=self._extract_inherits(
                 node=node,
                 source_code=source_code
             ),
+
             start_line=node.start_point[0] + 1,
+
             end_line=node.end_point[0] + 1,
+
             start_byte=node.start_byte,
+
             end_byte=node.end_byte,
+
             parameters=self._extract_parameters(
                 node=node,
                 source_code=source_code
             ),
+
             return_type=self._extract_return_type(
                 node=node,
                 source_code=source_code
             ),
-            imports=(
-                [name]
-                if symbol_kind == "import"
-                else list(file_imports)
-            ),
+
+            imports=list(file_imports),
+
             function_calls=self._extract_function_calls(
                 node=node,
                 source_code=source_code
             ),
+
             relationships=self._extract_relationships(
                 symbol_kind=symbol_kind,
                 parent_class=parent_class,
                 file_imports=file_imports
             ),
+
             docstring=self._extract_docstring(
                 node=node,
                 source_code=source_code
             ),
+
             decorators=decorators,
+
             children=self._extract_children(
                 node=node,
                 source_code=source_code
             ),
+
             code=code
         )
+
+    def _build_module_symbol(
+        self,
+        tree,
+        source_code: bytes,
+        file_path: Path,
+        file_imports: List[str],
+        repo_root = None
+    ) -> Symbol:
+
+        module_name = file_path.stem
+
+        top_level_code = self._extract_module_level_code(
+            root_node=tree.root_node,
+            source_code=source_code
+        )
+
+        if not top_level_code.strip():
+            return None
+
+        return Symbol(
+
+            symbol_id=f"module:{module_name}",
+
+            symbol_kind="module",
+
+            name=module_name,
+
+            qualified_name=module_name,
+
+            signature=None,
+
+            language=self.language,
+
+            file_path=str(file_path),
+
+            module_path=self._build_module_path(file_path, repo_root),
+            token_count=self._estimate_tokens(top_level_code),
+
+            embedding_text=self._build_embedding_text(
+                file_path=file_path,
+                symbol_kind="module",
+                name=module_name,
+                parent_class=None,
+                code=top_level_code
+            ),
+
+            parent_class=None,
+
+            is_async=False,
+
+            inherits=[],
+
+            start_line=1,
+
+            end_line=tree.root_node.end_point[0] + 1,
+
+            start_byte=tree.root_node.start_byte,
+
+            end_byte=tree.root_node.end_byte,
+
+            parameters=[],
+
+            return_type=None,
+
+            imports=list(file_imports),
+
+            function_calls=[],
+
+            relationships={
+                "imports": list(file_imports)
+            },
+
+            docstring=None,
+
+            decorators=[],
+
+            children=[],
+
+            code=top_level_code
+        )
+
+    def _extract_module_level_code(
+        self,
+        root_node: Node,
+        source_code: bytes
+    ) -> str:
+
+        blocks = []
+
+        for child in root_node.children:
+
+            if (
+                child.type in self.import_node_types
+                or child.type in self.class_node_types
+                or child.type in self.function_node_types
+            ):
+                continue
+
+            text = self._get_node_text(
+                node=child,
+                source_code=source_code
+            ).strip()
+
+            if text:
+                blocks.append(text)
+
+        return "\n\n".join(blocks)
 
     def _symbol_kind_for_node(
         self,
         node: Node
     ) -> str:
+
         if node.type in self.symbol_kind_by_node_type:
             return self.symbol_kind_by_node_type[node.type]
 
@@ -283,20 +505,39 @@ class TreeSitterExtractor:
         source_code: bytes,
         fallback: str
     ) -> str:
-        for field_name in ("name", "declarator", "declaration"):
+
+        for field_name in (
+            "name",
+            "declarator",
+            "declaration"
+        ):
+
             name_node = node.child_by_field_name(field_name)
+
             if name_node is None:
                 continue
 
-            identifier = self._find_identifier(name_node, source_code)
+            identifier = self._find_identifier(
+                name_node,
+                source_code
+            )
+
             if identifier:
                 return identifier
 
-            text = self._get_node_text(name_node, source_code).strip()
+            text = self._get_node_text(
+                name_node,
+                source_code
+            ).strip()
+
             if text:
                 return text
 
-        identifier = self._find_identifier(node, source_code)
+        identifier = self._find_identifier(
+            node,
+            source_code
+        )
+
         if identifier:
             return identifier
 
@@ -307,6 +548,7 @@ class TreeSitterExtractor:
         node: Node,
         source_code: bytes
     ) -> Optional[str]:
+
         identifier_types = {
             "identifier",
             "field_identifier",
@@ -316,10 +558,18 @@ class TreeSitterExtractor:
         }
 
         if node.type in identifier_types:
-            return self._get_node_text(node, source_code).strip()
+            return self._get_node_text(
+                node,
+                source_code
+            ).strip()
 
         for child in node.children:
-            identifier = self._find_identifier(child, source_code)
+
+            identifier = self._find_identifier(
+                child,
+                source_code
+            )
+
             if identifier:
                 return identifier
 
@@ -330,27 +580,43 @@ class TreeSitterExtractor:
         node: Node,
         source_code: bytes
     ) -> Optional[str]:
+
         body_node = node.child_by_field_name("body")
+
         if body_node is None:
             return None
 
         return source_code[
             node.start_byte:body_node.start_byte
-        ].decode("utf-8", errors="ignore").strip()
+        ].decode(
+            "utf-8",
+            errors="ignore"
+        ).strip()
 
     def _extract_parameters(
         self,
         node: Node,
         source_code: bytes
     ) -> List[str]:
+
         parameters_node = node.child_by_field_name("parameters")
+
         if parameters_node is None:
             return []
 
         parameters = []
+
         for child in parameters_node.named_children:
-            text = self._get_node_text(child, source_code).strip()
-            if text and text not in {",", "(", ")"}:
+
+            text = self._get_node_text(
+                child,
+                source_code
+            ).strip()
+
+            if (
+                text
+                and text not in {",", "(", ")"}
+            ):
                 parameters.append(text)
 
         return parameters
@@ -360,13 +626,21 @@ class TreeSitterExtractor:
         node: Node,
         source_code: bytes
     ) -> Optional[str]:
-        for field_name in ("return_type", "type"):
+
+        for field_name in (
+            "return_type",
+            "type"
+        ):
+
             return_node = node.child_by_field_name(field_name)
+
             if return_node is not None:
+
                 return_type = self._get_node_text(
                     return_node,
                     source_code
                 ).strip()
+
                 if return_type.startswith("->"):
                     return_type = return_type[2:].strip()
 
@@ -374,22 +648,60 @@ class TreeSitterExtractor:
 
         return None
 
+    def _build_module_path(self, file_path: Path, repo_root: Optional[Path] = None) -> str:
+        try:
+            if repo_root:
+                relative = file_path.relative_to(repo_root).with_suffix("")
+                return ".".join(relative.parts)
+            parts = list(file_path.with_suffix("").parts)
+            if "src" in parts:
+                parts = parts[parts.index("src"):]
+            return ".".join(parts)
+        except ValueError:
+            return file_path.stem
+
+    def _build_qualified_name(
+        self,
+        name: str,
+        parent_class: Optional[str]
+    ) -> str:
+
+        if parent_class:
+            return f"{parent_class}.{name}"
+
+        return name
+
     def _extract_inherits(
         self,
         node: Node,
         source_code: bytes
     ) -> List[str]:
-        inheritance_node = node.child_by_field_name("superclasses")
+
+        inheritance_node = node.child_by_field_name(
+            "superclasses"
+        )
+
         if inheritance_node is None:
-            inheritance_node = node.child_by_field_name("bases")
+            inheritance_node = node.child_by_field_name(
+                "bases"
+            )
 
         if inheritance_node is None:
             return []
 
         inherits = []
+
         for child in inheritance_node.named_children:
-            text = self._get_node_text(child, source_code).strip()
-            if text and text not in {",", "(", ")"}:
+
+            text = self._get_node_text(
+                child,
+                source_code
+            ).strip()
+
+            if (
+                text
+                and text not in {",", "(", ")"}
+            ):
                 inherits.append(text)
 
         return inherits
@@ -399,13 +711,19 @@ class TreeSitterExtractor:
         node: Node,
         source_code: bytes
     ) -> List[str]:
+
         decorators = []
 
         for child in node.children:
+
             if child.type not in self.decorator_node_types:
                 continue
 
-            text = self._get_node_text(child, source_code).strip()
+            text = self._get_node_text(
+                child,
+                source_code
+            ).strip()
+
             if text:
                 decorators.append(text)
 
@@ -416,15 +734,19 @@ class TreeSitterExtractor:
         node: Node,
         source_code: bytes
     ) -> Optional[str]:
+
         body_node = node.child_by_field_name("body")
+
         if body_node is None:
             return None
 
         for child in body_node.named_children:
+
             docstring = self._string_literal_text(
                 node=child,
                 source_code=source_code
             )
+
             if docstring:
                 return docstring
 
@@ -441,18 +763,29 @@ class TreeSitterExtractor:
         node: Node,
         source_code: bytes
     ) -> Optional[str]:
+
         if node.type in {
             "string",
             "string_literal",
             "raw_string_literal",
         }:
+
             return self._strip_string_quotes(
-                self._get_node_text(node, source_code).strip()
+                self._get_node_text(
+                    node,
+                    source_code
+                ).strip()
             )
 
         if node.type == "expression_statement":
+
             for child in node.named_children:
-                text = self._string_literal_text(child, source_code)
+
+                text = self._string_literal_text(
+                    child,
+                    source_code
+                )
+
                 if text:
                     return text
 
@@ -462,7 +795,14 @@ class TreeSitterExtractor:
         self,
         text: str
     ) -> str:
-        prefixes = ("r", "R", "u", "U", "f", "F", "b", "B")
+
+        prefixes = (
+            "r", "R",
+            "u", "U",
+            "f", "F",
+            "b", "B"
+        )
+
         while text and text[0] in prefixes:
             text = text[1:]
 
@@ -474,7 +814,12 @@ class TreeSitterExtractor:
         )
 
         for start_quote, end_quote in quote_pairs:
-            if text.startswith(start_quote) and text.endswith(end_quote):
+
+            if (
+                text.startswith(start_quote)
+                and text.endswith(end_quote)
+            ):
+
                 return text[
                     len(start_quote):-len(end_quote)
                 ].strip()
@@ -486,12 +831,15 @@ class TreeSitterExtractor:
         node: Node,
         source_code: bytes
     ) -> List[str]:
+
         calls: List[str] = []
+
         self._collect_function_calls(
             node=node,
             source_code=source_code,
             calls=calls
         )
+
         return calls
 
     def _collect_function_calls(
@@ -500,16 +848,26 @@ class TreeSitterExtractor:
         source_code: bytes,
         calls: List[str]
     ) -> None:
+
         if node.type in self.call_node_types:
-            function_node = node.child_by_field_name("function")
+
+            function_node = node.child_by_field_name(
+                "function"
+            )
+
             call_name = self._get_call_name(
                 node=function_node or node,
                 source_code=source_code
             )
-            if call_name and call_name not in calls:
+
+            if (
+                call_name
+                and call_name not in calls
+            ):
                 calls.append(call_name)
 
         for child in node.children:
+
             self._collect_function_calls(
                 node=child,
                 source_code=source_code,
@@ -521,7 +879,12 @@ class TreeSitterExtractor:
         node: Node,
         source_code: bytes
     ) -> Optional[str]:
-        text = self._get_node_text(node, source_code).strip()
+
+        text = self._get_node_text(
+            node,
+            source_code
+        ).strip()
+
         if not text:
             return None
 
@@ -535,17 +898,22 @@ class TreeSitterExtractor:
         node: Node,
         source_code: bytes
     ) -> List[str]:
+
         if node.type not in self.class_node_types:
             return []
 
         children = []
+
         for child in node.children:
+
             if child.type not in self.function_node_types:
+
                 self._collect_immediate_child_functions(
                     node=child,
                     source_code=source_code,
                     children=children
                 )
+
                 continue
 
             name = self._extract_name(
@@ -556,7 +924,11 @@ class TreeSitterExtractor:
                     source_code
                 ).splitlines()[0].strip()
             )
-            if name and name not in children:
+
+            if (
+                name
+                and name not in children
+            ):
                 children.append(name)
 
         return children
@@ -567,11 +939,14 @@ class TreeSitterExtractor:
         source_code: bytes,
         children: List[str]
     ) -> None:
+
         for child in node.children:
+
             if child.type in self.class_node_types:
                 continue
 
             if child.type in self.function_node_types:
+
                 name = self._extract_name(
                     node=child,
                     source_code=source_code,
@@ -580,8 +955,13 @@ class TreeSitterExtractor:
                         source_code
                     ).splitlines()[0].strip()
                 )
-                if name and name not in children:
+
+                if (
+                    name
+                    and name not in children
+                ):
                     children.append(name)
+
                 continue
 
             self._collect_immediate_child_functions(
@@ -596,9 +976,13 @@ class TreeSitterExtractor:
         parent_class: Optional[str],
         file_imports: List[str]
     ) -> Dict[str, List[str]]:
+
         relationships: Dict[str, List[str]] = {}
 
-        if parent_class and symbol_kind == "method":
+        if (
+            parent_class
+            and symbol_kind == "method"
+        ):
             relationships["parent_class"] = [parent_class]
 
         if file_imports:
@@ -611,26 +995,45 @@ class TreeSitterExtractor:
         node: Node,
         child_type: str
     ) -> bool:
-        return any(child.type == child_type for child in node.children)
+
+        return any(
+            child.type == child_type
+            for child in node.children
+        )
 
     def _get_node_text(
         self,
         node: Optional[Node],
         source_code: bytes
     ) -> str:
+
         if node is None:
             return ""
 
         return source_code[
             node.start_byte:node.end_byte
-        ].decode("utf-8", errors="ignore")
+        ].decode(
+            "utf-8",
+            errors="ignore"
+        )
 
     def _build_symbol_id(
         self,
         symbol_kind: str,
         symbol_name: str,
-        start_line: int
+        start_line: int,
+        module_path: Optional[str] = None,
+        qualified_name: Optional[str] = None
     ) -> str:
+
+        if module_path and qualified_name:
+
+            return (
+                f"{symbol_kind}:"
+                f"{module_path}:"
+                f"{qualified_name}"
+            )
+
         return (
             f"{symbol_kind}:"
             f"{symbol_name}:"
@@ -641,4 +1044,46 @@ class TreeSitterExtractor:
         self,
         file_path: Path
     ) -> str:
-        return self.parser_language or self.language
+
+        return (
+            self.parser_language
+            or self.language
+        )
+    
+    def _estimate_tokens(
+        self,
+        text: str
+    ) -> int:
+        """
+        Rough token estimation.
+        """
+
+        return int(len(text.split()) * 1.3)
+
+
+    def _build_embedding_text(
+        self,
+        file_path: Path,
+        symbol_kind: str,
+        name: str,
+        parent_class: Optional[str],
+        code: str
+    ) -> str:
+        """
+        Builds enriched embedding text.
+        """
+
+        prefix_parts = [
+            f"File: {file_path.name}",
+            f"Type: {symbol_kind}",
+            f"Name: {name}"
+        ]
+
+        if parent_class:
+            prefix_parts.append(
+                f"Class: {parent_class}"
+            )
+
+        prefix = " | ".join(prefix_parts)
+
+        return f"{prefix}\n\n{code}"

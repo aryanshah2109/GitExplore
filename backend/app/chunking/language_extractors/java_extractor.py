@@ -21,8 +21,6 @@ class JavaExtractor(TreeSitterExtractor):
         "constructor_declaration",
     }
     symbol_kind_by_node_type = {
-        "package_declaration": "import",
-        "import_declaration": "import",
         "class_declaration": "class",
         "interface_declaration": "interface",
         "enum_declaration": "enum",

@@ -18,7 +18,6 @@ class CExtractor(TreeSitterExtractor):
         "function_definition",
     }
     symbol_kind_by_node_type = {
-        "preproc_include": "import",
         "struct_specifier": "struct",
         "union_specifier": "union",
         "enum_specifier": "enum",
