@@ -18,8 +18,6 @@ class GoExtractor(TreeSitterExtractor):
         "method_declaration",
     }
     symbol_kind_by_node_type = {
-        "package_clause": "import",
-        "import_declaration": "import",
         "type_declaration": "type",
         "function_declaration": "function",
         "method_declaration": "function",

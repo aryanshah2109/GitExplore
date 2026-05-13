@@ -22,9 +22,6 @@ class CPPExtractor(TreeSitterExtractor):
         "function_definition",
     }
     symbol_kind_by_node_type = {
-        "preproc_include": "import",
-        "namespace_alias_definition": "import",
-        "using_declaration": "import",
         "class_specifier": "class",
         "struct_specifier": "struct",
         "union_specifier": "union",
