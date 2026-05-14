@@ -196,15 +196,19 @@ chunking:
 
 embedding:
   provider: "ollama"
-  model_name: "nomic-embed-text"
+  model_name: "nomic-embed-text:latest"
   batch_size: 32
   normalize: true
 
 vector_db:
   host: "localhost"
   port: 6333
-  collection_prefix: "gitexplore"
+  collection_name: "gitexplore"
   top_k: 20
+
+vector:
+  size: 768
+  
 
 bm25:
   top_k: 20
