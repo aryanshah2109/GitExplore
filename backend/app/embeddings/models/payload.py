@@ -11,9 +11,7 @@ class Payload:
     symbol: str
     chunk_type: str
 
-    text: str
-
-    file_path: str = ""
+    module_path: str = ""
 
     start_line: int = 0
     end_line: int = 0

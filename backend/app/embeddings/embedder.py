@@ -11,23 +11,23 @@ class EmbeddingGenerator:
         self.embedding_model = config.embedding.model_name
         self.batch_size = config.embedding.batch_size
         
-    def generate_embeddings(self, chunks: List[str]):
+    def generate_embeddings(self, texts: List[str]):
 
-        embeddings_corpus = []
+        try:
 
-        for i in range(0, len(chunks), self.batch_size):
-
-            batch = chunks[i:i+self.batch_size]
-
-            batch_embeddings = ollama.embed(
+            response = ollama.embed(
                 model = self.embedding_model,
-                input = batch
+                input = texts
             )            
 
-            embeddings_corpus.extend(batch_embeddings["embeddings"])
+            return response["embeddings"]
+        
+        except Exception as e:
 
-            logger.debug(f"Processed batch {i // self.batch_size + 1}")
+            logger.error(
+                f"Embedding generation failed: {e}"
+            )
 
-        return embeddings_corpus
+            raise
     
 embedding_generator = EmbeddingGenerator()
