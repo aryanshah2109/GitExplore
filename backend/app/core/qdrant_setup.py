@@ -25,13 +25,25 @@ class QdrantSetup():
                 port = self.port
             )
 
-            client.create_collection(
-                collection_name = self.collection_name,
-                vectors_config = VectorParams(
-                    size = self.size,
-                    distance = Distance.COSINE
+            collections = client.get_collections().collections
+
+            collection_names = [
+                collection.name
+                for collection in collections
+            ]
+
+            if self.collection_name not in collection_names:
+                
+                client.create_collection(
+                    collection_name = self.collection_name,
+                    vectors_config = VectorParams(
+                        size = self.size,
+                        distance = Distance.COSINE
+                    )
                 )
-            )
+            
+            else:
+                logger.info("Collection already exists")
 
             logger.info("Successful Qdrant Setup")
 
