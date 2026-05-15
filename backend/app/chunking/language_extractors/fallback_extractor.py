@@ -76,13 +76,16 @@ class FallbackExtractor:
     def extract_symbols(
         self,
         file_path: Path,
-        repo_root: Optional[Path] = None
+        repo_root: Optional[Path] = None,
+        repo_id: Optional[str] = ""
     ) -> List[Symbol]:
         """
         Extracts text chunks as semantic symbols.
 
         Input:
             file_path: Path
+            repo_root: Optional[Path]
+            repo_id: Optional[str] 
 
         Output:
             symbols: List[Symbol]
@@ -129,7 +132,8 @@ class FallbackExtractor:
                     chunk_index=index,
                     file_path=file_path,
                     full_text=source_text,
-                    start_byte=current_byte
+                    start_byte=current_byte,
+                    repo_id = repo_id
                 )
 
                 symbols.append(symbol)
@@ -162,7 +166,8 @@ class FallbackExtractor:
         chunk_index: int,
         file_path: Path,
         full_text: str,
-        start_byte: int
+        start_byte: int,
+        repo_id: Optional[str] = ""
     ) -> Symbol:
         """
         Creates Symbol object for document chunk.
@@ -189,6 +194,7 @@ class FallbackExtractor:
         )
 
         return Symbol(
+            repo_id = repo_id,
 
             symbol_id=self._build_symbol_id(
                 file_name=file_path.name,

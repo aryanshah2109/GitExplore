@@ -46,7 +46,8 @@ class TreeSitterExtractor:
     def extract_symbols(
         self,
         file_path: Path,
-        repo_root: Optional[Path] = None
+        repo_root: Optional[Path] = None,
+        repo_id: Optional[str] = ""
     ) -> List[Symbol]:
 
         try:
@@ -75,7 +76,8 @@ class TreeSitterExtractor:
                 parent_class=None,
                 file_imports=file_imports,
                 decorators=[],
-                repo_root=repo_root
+                repo_root=repo_root,
+                repo_id = repo_id
             )
 
             module_symbol = self._build_module_symbol(
@@ -83,7 +85,8 @@ class TreeSitterExtractor:
                 source_code=source_code,
                 file_path=file_path,
                 file_imports=file_imports,
-                repo_root=repo_root
+                repo_root=repo_root,
+                repo_id = repo_id
             )
 
             if module_symbol:
@@ -138,7 +141,8 @@ class TreeSitterExtractor:
         parent_class: Optional[str],
         file_imports: List[str],
         decorators: List[str],
-        repo_root: Optional[Path]
+        repo_root: Optional[Path],
+        repo_id: Optional[str]
     ) -> None:
 
         if node.type == "decorated_definition":
@@ -161,7 +165,8 @@ class TreeSitterExtractor:
                     parent_class=parent_class,
                     file_imports=file_imports,
                     decorators=definition_decorators,
-                    repo_root=repo_root
+                    repo_root=repo_root,
+                    repo_id=repo_id
                 )
 
             return
@@ -196,7 +201,8 @@ class TreeSitterExtractor:
                 parent_class=None,
                 file_imports=file_imports,
                 decorators=decorators,
-                repo_root=repo_root
+                repo_root=repo_root,
+                repo_id=repo_id
             )
 
             symbols.append(symbol)
@@ -214,7 +220,8 @@ class TreeSitterExtractor:
                     parent_class=parent_class,
                     file_imports=file_imports,
                     decorators=decorators,
-                    repo_root=repo_root
+                    repo_root=repo_root,
+                    repo_id = repo_id
                 )
             )
 
@@ -228,7 +235,8 @@ class TreeSitterExtractor:
                 parent_class=next_parent_class,
                 file_imports=file_imports,
                 decorators=[],
-                repo_root=repo_root
+                repo_root=repo_root,
+                repo_id=repo_id
             )
 
     def _build_symbol(
@@ -241,6 +249,7 @@ class TreeSitterExtractor:
         file_imports: List[str],
         decorators: List[str],
         repo_root: Optional[Path] = None,
+        repo_id: Optional[str] = ""
     ) -> Symbol:
 
         code = self._get_node_text(
@@ -276,6 +285,7 @@ class TreeSitterExtractor:
         )
 
         return Symbol(
+            repo_id=repo_id,
 
             symbol_id=self._build_symbol_id(
                 symbol_kind=symbol_kind,
@@ -381,7 +391,8 @@ class TreeSitterExtractor:
         source_code: bytes,
         file_path: Path,
         file_imports: List[str],
-        repo_root = None
+        repo_root: Optional[Path] = None,
+        repo_id: Optional[Path] = ""
     ) -> Symbol:
 
         module_name = file_path.stem
@@ -395,6 +406,7 @@ class TreeSitterExtractor:
             return None
 
         return Symbol(
+            repo_id = repo_id,
 
             symbol_id=f"module:{module_name}",
 
@@ -1076,6 +1088,7 @@ class TreeSitterExtractor:
         prefix_parts = [
             f"File: {file_path.name}",
             f"Type: {symbol_kind}",
+            f"Module: {self._build_module_path(file_path)}",
             f"Name: {name}"
         ]
 

@@ -3,6 +3,7 @@ from typing import List, Dict, Optional
 
 @dataclass
 class Symbol:
+    repo_id: str
 
     symbol_id: str
 
