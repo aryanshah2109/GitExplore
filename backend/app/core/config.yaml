@@ -193,12 +193,15 @@ chunking:
   fallback_overlap: 20
   max_chunk_tokens: 1000
   min_chunk_length: 50
+  max_tokens: 512
+  overlap_tokens: 32
 
 embedding:
   provider: "ollama"
   model_name: "nomic-embed-text:latest"
   batch_size: 32
   normalize: true
+  size: 768
 
 vector_db:
   host: "localhost"
@@ -206,9 +209,8 @@ vector_db:
   collection_name: "gitexplore"
   top_k: 20
 
-vector:
-  size: 768
-  
+tiktoken:
+  name: "cl100k_base"
 
 bm25:
   top_k: 20

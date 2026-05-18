@@ -12,7 +12,7 @@ class QdrantSetup():
         self.host = config.vector_db.host
         self.port = config.vector_db.port
         self.collection_name = config.vector_db.collection_name
-        self.size = config.vector.size
+        self.size = config.embedding.size
 
 
     def setup(self):
