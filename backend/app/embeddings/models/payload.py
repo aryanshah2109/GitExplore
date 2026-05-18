@@ -16,4 +16,9 @@ class Payload:
     start_line: int = 0
     end_line: int = 0
 
+    symbol_id: str = ""
+
     parent_class: Optional[str] = None
+
+    file_path: str = ""
+    code: str = ""

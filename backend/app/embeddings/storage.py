@@ -56,62 +56,70 @@ class StorageToQdrant:
 
             for i in range(0, len(all_chunks), batch_size):
 
-                chunk_batch = all_chunks[
-                    i:i + batch_size
-                ]
+                try:
+                    chunk_batch = all_chunks[
+                        i:i + batch_size
+                    ]
 
-                embedding_texts = [
-                    chunk["embedding_text"]
-                    for chunk in chunk_batch
-                ]
+                    embedding_texts = [
+                        chunk["embedding_text"]
+                        for chunk in chunk_batch
+                    ]
 
-                embeddings = (
-                    embedding_generator.generate_embeddings(
-                        embedding_texts
-                    )
-                )
-
-                points = []
-
-                for chunk, embedding in zip(
-                    chunk_batch,
-                    embeddings
-                ):
-
-                    payload = Payload(
-                        repo_id=chunk["repo_id"],
-                        language=chunk["language"],
-                        symbol=chunk["name"],
-                        chunk_type=chunk["symbol_kind"],
-                        module_path=chunk["module_path"],
-                        start_line=chunk["start_line"],
-                        end_line=chunk["end_line"],
-                        parent_class=chunk["parent_class"]
-                    )
-
-                    points.append(
-                        PointStruct(
-                            id=str(
-                                uuid.uuid5(
-                                    uuid.NAMESPACE_DNS,
-                                    chunk["symbol_id"]
-                                )
-                            ),
-                            vector=embedding,
-                            payload=asdict(payload)
+                    embeddings = (
+                        embedding_generator.generate_embeddings(
+                            embedding_texts
                         )
                     )
 
-                client.upsert(
-                    collection_name=self.collection_name,
-                    points=points,
-                    wait=False
-                )
+                    points = []
 
-                logger.info(
-                    f"Stored batch "
-                    f"{i // batch_size + 1}"
-                )
+                    for chunk, embedding in zip(
+                        chunk_batch,
+                        embeddings
+                    ):
+
+                        payload = Payload(
+                            repo_id=chunk["repo_id"],
+                            language=chunk["language"],
+                            symbol=chunk["name"],
+                            chunk_type=chunk["symbol_kind"],
+                            module_path=chunk["module_path"],
+                            start_line=chunk["start_line"],
+                            end_line=chunk["end_line"],
+                            parent_class=chunk["parent_class"],
+                            file_path=chunk["file_path"],
+                            code=chunk["code"],
+                            symbol_id=chunk["symbol_id"]
+                        )
+
+                        points.append(
+                            PointStruct(
+                                id=str(
+                                    uuid.uuid5(
+                                        uuid.NAMESPACE_DNS,
+                                        chunk["symbol_id"]
+                                    )
+                                ),
+                                vector=embedding,
+                                payload=asdict(payload)
+                            )
+                        )
+
+                    client.upsert(
+                        collection_name=self.collection_name,
+                        points=points,
+                        wait=False
+                    )
+
+                    logger.info(
+                        f"Stored batch "
+                        f"{i // batch_size + 1}"
+                    )
+
+                except Exception as e:
+                    logger.error(f"Error while embedding batch {i // batch_size + 1} : {e}")
+                    continue
 
             logger.info(
                 "Completed Qdrant storage"
