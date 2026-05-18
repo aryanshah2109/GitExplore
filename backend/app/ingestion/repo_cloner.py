@@ -57,7 +57,6 @@ class RepoCloner:
             return {
                 "repo_id": self.repo_id,
                 "repo_path": str(self.path_to_repo),
-                "status": "success"
             }
 
         except Exception as e:

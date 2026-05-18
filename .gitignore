@@ -221,3 +221,6 @@ __marimo__/
 # Data
 data/
 logs/
+
+# qdrant storage
+qdrant_storage/
