@@ -6,6 +6,8 @@ from backend.app.retrieval.bm25 import BM25Retriever
 from backend.app.retrieval.dense import DenseRetriever
 from backend.app.intelligence.classifier import detect_query_type
 
+from backend.app.rag.pipeline import RAGPipeline
+
 import json
 from pprint import pprint
 
@@ -43,26 +45,10 @@ splitted_chunks = chunk_splitter.split_all_chunks(all_chunks)
 
 qdrant_storage_object.store_chunks(all_chunks=splitted_chunks)
 
-bm25 = BM25Retriever(splitted_chunks)
-dense = DenseRetriever()
-
-query = "Explain in detail how model training happens in the project?"
+query = "Explain with code snippet how model evaluation happens?"
 repo_id = "265dc296-f7f0-4ec9-906d-d2a30a27189e"
 
-bm25_results = bm25.retrieve(query)
-dense_results = dense.get_context(query, repo_id)
+rag = RAGPipeline(splitted_chunks, repo_id)
+print(rag.query(query))
 
-print(type(bm25_results))
-print(type(dense_results))
-
-print("="*50)
-
-pprint(bm25_results[0])
-
-print("\n\n")
-
-print("="*50)
-
-pprint(dense_results[0])
-
-print("\n\n")
+rag.clear_session()
