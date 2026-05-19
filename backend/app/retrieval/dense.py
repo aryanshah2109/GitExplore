@@ -191,12 +191,12 @@ class DenseRetriever:
             score = point.score,
             retriever_type = "dense",
             metadata = {
-                    "chunk_type": payload.get("symbol_kind"),
+                    "chunk_type": payload.get("chunk_type"),
                     "language":payload.get("language"),
                     "parent_class":payload.get("parent_class"),
                     "file_path":payload.get("file_path"),
                     "module_path":payload.get("module_path"),
-                    "name":payload.get("name"),
+                    "name":payload.get("symbol"),
                     "code_lines": f"{payload.get("start_line")} - {payload.get("end_line")}",
             },
             code = payload.get("code")

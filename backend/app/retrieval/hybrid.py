@@ -2,51 +2,51 @@ from collections import defaultdict
 from typing import List, Dict
 
 from backend.app.core.config_loader import config
+from backend.app.core.logger import get_logger
+
+logger = get_logger()
+
 
 class RRFRetriever:
 
     def __init__(self, k: int = 60):
         self.k = config.hybrid.rrf_k
 
-    def fuse(self, retrieval_results: List[Dict]) -> List:
+    def deduplicate(self, results: List) -> List:
+        seen = set()
+        deduped = []
+        for item in results:
+            # Deduplicate by base symbol_id 
+            base_id = item.chunk_id.rsplit("__part", 1)[0]
+            if base_id not in seen:
+                seen.add(base_id)
+                deduped.append(item)
+        return deduped
 
-        """
-        Input:
-        retrieval_results = [
-            bm25_results,
-            dense_results
-        ]
-        """
+    def fuse(self, retrieval_results: List[List]) -> List:
+        try:
 
-        rrf_scores = defaultdict(float)
-        documents = {}
+            rrf_scores = defaultdict(float)
+            documents = {}
 
-        for results in retrieval_results:
+            for results in retrieval_results:
+                for rank, item in enumerate(results, start=1):
+                    chunk_id = item.chunk_id          # attribute, not key
+                    rrf_scores[chunk_id] += 1 / (self.k + rank)
+                    documents[chunk_id] = item
 
-            for rank, item in enumerate(results, start=1):
+            reranked = sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True)
 
-                chunk_id = item["chunk_id"]
+            final_top_k = config.hybrid.final_top_k
+            final_results = []
 
-                rrf_scores[chunk_id] += 1 / (
-                    self.k + rank
-                )
+            for chunk_id, rrf_score in reranked[:final_top_k]:
+                doc = documents[chunk_id]
+                doc.score = rrf_score          
+                doc.retriever_type = "hybrid"  
+                final_results.append(doc)
 
-                documents[chunk_id] = item
+            return self.deduplicate(final_results)
 
-        reranked = sorted(
-            rrf_scores.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )
-
-        final_results = []
-
-        for chunk_id, score in reranked:
-
-            doc = documents[chunk_id]
-
-            doc["rrf_score"] = score
-
-            final_results.append(doc)
-
-        return final_results
+        except Exception as e:
+            logger.error(f"Error while hybrid retrieval: {e}")
