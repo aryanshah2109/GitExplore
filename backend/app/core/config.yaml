@@ -193,13 +193,13 @@ chunking:
   fallback_overlap: 20
   max_chunk_tokens: 1000
   min_chunk_length: 50
-  max_tokens: 512
+  max_tokens: 400
   overlap_tokens: 32
 
 embedding:
   provider: "ollama"
-  model_name: "jina/jina-embeddings-v2-base-en"
-  batch_size: 32
+  model_name: "nomic-embed-text"
+  batch_size: 16
   normalize: true
   size: 768
 
@@ -207,21 +207,36 @@ vector_db:
   host: "localhost"
   port: 6333
   collection_name: "gitexplore"
-  top_k: 20
+  top_k: 30
 
 tiktoken:
   name: "cl100k_base"
 
 bm25:
-  top_k: 20
+  top_k: 30
 
 hybrid:
   rrf_k: 60
-  final_top_k: 10
+  final_top_k: 20
 
 reranker:
   model_name: "rerank-v3.5"
-  top_k: 5
+  top_k: 8
+
+retrieval:
+  query_expansion:
+    enabled: true
+    max_terms: 12
+  structural_expansion:
+    max_depth: 1
+    max_related_chunks: 8
+  architecture:
+    bm25_top_k: 40
+    dense_top_k: 40
+    rerank_top_k: 12
+    context_budget_tokens: 1800
+    expanded_related_limit: 12
+    expansion_depth: 2
 
 query:
   classify: true
@@ -230,14 +245,25 @@ query:
     - find_function
     - debug
     - architecture
+  model_name: "llama-3.1-8b-instant"
 
 generation:
-  provider: "ollama"
-  model_name: "mistral:7b"
+  provider: "groq"
+  model_name: "llama-3.1-8b-instant"
   temperature: 0.2
-  num_predict: 5120
-  context_budget_tokens: 5000
-  conversation_history_turns: 5
+  num_predict: 512
+  context_budget_tokens: 1000
+  conversation_history_turns: 1
+  max_retries: 2
+  retry_delay_seconds: 1.25
+
+judge:
+  provider: "groq"
+  model_name: "llama-3.1-8b-instant"
+  temperature: 0.0
+  num_predict: 256
+  max_retries: 2
+  retry_delay_seconds: 1.25
 
 graph:
   enabled: true
@@ -262,7 +288,7 @@ evaluation:
     - hybrid
 
 logging:
-  level: DEBUG
+  level: INFO
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
   save_logs: true
   name: gitexplore
