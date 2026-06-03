@@ -133,7 +133,8 @@ class FallbackExtractor:
                     file_path=file_path,
                     full_text=source_text,
                     start_byte=current_byte,
-                    repo_id = repo_id
+                    repo_root=repo_root,
+                    repo_id=repo_id
                 )
 
                 symbols.append(symbol)
@@ -167,6 +168,7 @@ class FallbackExtractor:
         file_path: Path,
         full_text: str,
         start_byte: int,
+        repo_root: Optional[Path] = None,
         repo_id: Optional[str] = ""
     ) -> Symbol:
         """
@@ -193,6 +195,8 @@ class FallbackExtractor:
             full_text[:end_byte].count("\n") + 1
         )
 
+        relative_file_path = self._relative_file_path(file_path, repo_root)
+
         return Symbol(
             repo_id = repo_id,
 
@@ -212,7 +216,7 @@ class FallbackExtractor:
 
             language=self.language,
 
-            file_path=str(file_path),
+            file_path=relative_file_path,
 
             module_path=None,
 
@@ -465,3 +469,12 @@ class FallbackExtractor:
             f"{chunk_index}:"
             f"{uuid4()}"
         )
+
+    def _relative_file_path(self, file_path: Path, repo_root: Optional[Path] = None) -> str:
+        try:
+            if repo_root:
+                return file_path.relative_to(repo_root).as_posix()
+        except ValueError:
+            pass
+
+        return file_path.as_posix()

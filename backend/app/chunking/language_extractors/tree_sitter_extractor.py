@@ -276,6 +276,7 @@ class TreeSitterExtractor:
             symbol_kind = "method"
 
         token_count = self._estimate_tokens(code)
+        relative_file_path = self._relative_file_path(file_path, repo_root)
         embedding_text = self._build_embedding_text(
             file_path=file_path,
             symbol_kind=symbol_kind,
@@ -317,7 +318,7 @@ class TreeSitterExtractor:
 
             language=self.language,
 
-            file_path=str(file_path),
+            file_path=relative_file_path,
 
             module_path=self._build_module_path(file_path, repo_root),
             token_count=token_count,
@@ -405,6 +406,8 @@ class TreeSitterExtractor:
         if not top_level_code.strip():
             return None
 
+        relative_file_path = self._relative_file_path(file_path, repo_root)
+
         return Symbol(
             repo_id = repo_id,
 
@@ -420,7 +423,7 @@ class TreeSitterExtractor:
 
             language=self.language,
 
-            file_path=str(file_path),
+            file_path=relative_file_path,
 
             module_path=self._build_module_path(file_path, repo_root),
             token_count=self._estimate_tokens(top_level_code),
@@ -1100,3 +1103,16 @@ class TreeSitterExtractor:
         prefix = " | ".join(prefix_parts)
 
         return f"{prefix}\n\n{code}"
+
+    def _relative_file_path(
+        self,
+        file_path: Path,
+        repo_root: Optional[Path] = None
+    ) -> str:
+        try:
+            if repo_root:
+                return file_path.relative_to(repo_root).as_posix()
+        except ValueError:
+            pass
+
+        return file_path.as_posix()
