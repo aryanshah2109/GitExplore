@@ -53,8 +53,7 @@ class ManifestBuilder:
 
     def build_manifest(self) -> Path:
         """
-            Builds manifest of a repository and returns path
-        
+            Builds manifest of a repository and returns path        
         """
 
         try:

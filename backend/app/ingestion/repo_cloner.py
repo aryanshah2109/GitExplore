@@ -7,7 +7,6 @@ from git import Repo
 from uuid import uuid4
 import shutil
 
-from backend.app.core.config_loader import config
 from backend.app.core.path_constants import REPOS_DIR
 from backend.app.core.logger import get_logger
 
