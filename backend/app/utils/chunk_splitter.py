@@ -6,7 +6,10 @@ from backend.app.utils.tokenizer import Tokenizer
 
 class ChunkSplitter:
     def __init__(self):
-        self.max_tokens = config.chunking.max_tokens
+        self.max_tokens = min(
+            config.chunking.max_tokens,
+            400
+        )
         self.overlap_tokens = config.chunking.overlap_tokens
         self.tokenizer = Tokenizer()
 
@@ -15,31 +18,116 @@ class ChunkSplitter:
         chunk: Dict
     ) -> List[Dict]:
 
-        text = chunk.get("embedding_text", "")
+        embedding_text = chunk.get(
+            "embedding_text",
+            ""
+        )
 
-        if self.tokenizer.count_tokens(text) <= self.max_tokens:
+        if not embedding_text:
+            return []
+
+        total_tokens = self.tokenizer.count_tokens(
+            embedding_text
+        )
+
+        if total_tokens <= self.max_tokens:
             return [chunk]
 
-        parts = self.tokenizer.split_by_tokens(text, self.max_tokens,self.overlap_tokens)
+        # Preserve metadata header       
+        header = ""
+        body = embedding_text
+
+        if "\n\n" in embedding_text:
+            header, body = embedding_text.split(
+                "\n\n",
+                1
+            )
+
+        body_parts = self.tokenizer.split_by_tokens(
+            text=body,
+            max_tokens=self.max_tokens,
+            overlap_tokens=self.overlap_tokens
+        )
+
         sub_chunks = []
 
-        for i, part in enumerate(parts):
+        for i, part in enumerate(body_parts):
+
             sub = chunk.copy()
-            sub["embedding_text"] = part
-            sub["symbol_id"] = f"{chunk['symbol_id']}__part{i}"
+
+            # Preserve metadata on every chunk
+            if header:
+                sub["embedding_text"] = (
+                    header
+                    + "\n\n"
+                    + part
+                )
+            else:
+                sub["embedding_text"] = part
+
+            sub["symbol_id"] = (
+                f"{chunk['symbol_id']}__part{i}"
+            )
+
             sub_chunks.append(sub)
 
         return sub_chunks
 
-
     def split_all_chunks(
         self,
-        chunks: List[Dict],
+        chunks: List[Dict]
     ) -> List[Dict]:
 
         result = []
+
         for chunk in chunks:
-            result.extend(
-                self.split_chunk(chunk)
+
+            split_chunks = self.split_chunk(
+                chunk
             )
+
+            for split_chunk in split_chunks:
+
+                token_count = (
+                    self.tokenizer.count_tokens(
+                        split_chunk["embedding_text"]
+                    )
+                )
+
+                # Final safety check
+                if token_count > self.max_tokens:
+
+                    # Force second split
+                    smaller_parts = (
+                        self.tokenizer.split_by_tokens(
+                            split_chunk["embedding_text"],
+                            self.max_tokens // 2,
+                            self.overlap_tokens
+                        )
+                    )
+
+                    for idx, part in enumerate(
+                        smaller_parts
+                    ):
+                        forced_chunk = (
+                            split_chunk.copy()
+                        )
+
+                        forced_chunk["embedding_text"] = (
+                            part
+                        )
+
+                        forced_chunk["symbol_id"] = (
+                            f"{split_chunk['symbol_id']}__sub{idx}"
+                        )
+
+                        result.append(
+                            forced_chunk
+                        )
+
+                else:
+                    result.append(
+                        split_chunk
+                    )
+
         return result

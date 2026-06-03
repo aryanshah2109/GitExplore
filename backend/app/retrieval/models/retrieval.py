@@ -9,3 +9,4 @@ class Retrieval:
     retriever_type : str = ""
     metadata: Dict = field(default_factory=dict)
     code: Optional[str] = ""
+    

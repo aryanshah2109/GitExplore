@@ -9,15 +9,17 @@ logger = get_logger()
 
 class RRFRetriever:
 
-    def __init__(self, k: int = 60):
+    def __init__(self):
         self.k = config.hybrid.rrf_k
 
     def deduplicate(self, results: List) -> List:
         seen = set()
         deduped = []
         for item in results:
+
             # Deduplicate by base symbol_id 
             base_id = item.chunk_id.rsplit("__part", 1)[0]
+
             if base_id not in seen:
                 seen.add(base_id)
                 deduped.append(item)
@@ -31,7 +33,7 @@ class RRFRetriever:
 
             for results in retrieval_results:
                 for rank, item in enumerate(results, start=1):
-                    chunk_id = item.chunk_id          # attribute, not key
+                    chunk_id = item.chunk_id          
                     rrf_scores[chunk_id] += 1 / (self.k + rank)
                     documents[chunk_id] = item
 
