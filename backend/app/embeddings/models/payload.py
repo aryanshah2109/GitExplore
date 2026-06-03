@@ -1,5 +1,5 @@
-from dataclasses import dataclass, asdict
-from typing import Optional
+from dataclasses import dataclass, field
+from typing import Optional, Dict, List
 
 
 @dataclass
@@ -22,3 +22,10 @@ class Payload:
 
     file_path: str = ""
     code: str = ""
+
+    imports: list = field(default_factory=list)
+    function_calls: list = field(default_factory=list)
+    qualified_name: str = ""
+    children: list = field(default_factory=list)
+    docstring: str = ""
+    relationships: Dict[str, List[str]] = field(default_factory=dict)

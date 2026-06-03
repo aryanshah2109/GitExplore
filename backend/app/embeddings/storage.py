@@ -54,72 +54,148 @@ class StorageToQdrant:
                 f"Processing {len(all_chunks)} chunks"
             )
 
-            for i in range(0, len(all_chunks), batch_size):
+            for i in range(
+                0,
+                len(all_chunks),
+                batch_size
+            ):
 
-                try:
-                    chunk_batch = all_chunks[
-                        i:i + batch_size
-                    ]
+                chunk_batch = all_chunks[
+                    i:i + batch_size
+                ]
 
-                    embedding_texts = [
-                        chunk["embedding_text"]
-                        for chunk in chunk_batch
-                    ]
+                valid_chunks = []
+                texts = []
 
-                    embeddings = (
-                        embedding_generator.generate_embeddings(
-                            embedding_texts
-                        )
-                    )
+                for chunk in chunk_batch:
 
-                    points = []
+                    try:
 
-                    for chunk, embedding in zip(
-                        chunk_batch,
-                        embeddings
-                    ):
+                        text = chunk["embedding_text"]
 
-                        payload = Payload(
-                            repo_id=chunk["repo_id"],
-                            language=chunk["language"],
-                            symbol=chunk["name"],
-                            chunk_type=chunk["symbol_kind"],
-                            module_path=chunk["module_path"],
-                            start_line=chunk["start_line"],
-                            end_line=chunk["end_line"],
-                            parent_class=chunk["parent_class"],
-                            file_path=chunk["file_path"],
-                            code=chunk["code"],
-                            symbol_id=chunk["symbol_id"]
+                        token_count = len(
+                            text.split()
                         )
 
-                        points.append(
-                            PointStruct(
-                                id=str(
-                                    uuid.uuid5(
-                                        uuid.NAMESPACE_DNS,
-                                        chunk["symbol_id"]
-                                    )
-                                ),
-                                vector=embedding,
-                                payload=asdict(payload)
+                        if token_count > 250:
+
+                            logger.warning(
+                                f"[LARGE] "
+                                f"{chunk['file_path']} "
+                                f"| {chunk['symbol_id']} "
+                                f"| {token_count} words"
                             )
+
+                        valid_chunks.append(chunk)
+                        texts.append(text)
+
+                    except Exception as e:
+
+                        logger.error(
+                            "\nFAILED CHUNK\n"
+                            f"File: {chunk['file_path']}\n"
+                            f"Symbol: {chunk['symbol_id']}\n"
+                            f"Type: {chunk['symbol_kind']}\n"
+                            f"Chars: {len(chunk['embedding_text'])}\n"
+                            f"Words: {len(chunk['embedding_text'].split())}\n"
+                            f"Start Line: {chunk['start_line']}\n"
+                            f"End Line: {chunk['end_line']}\n"
+                            f"Error: {e}\n"
                         )
 
-                    client.upsert(
-                        collection_name=self.collection_name,
-                        points=points,
-                        wait=False
-                    )
+                        continue
 
-                    logger.info(
-                        f"Stored batch "
-                        f"{i // batch_size + 1}"
-                    )
+                if valid_chunks:
 
-                except Exception as e:
-                    logger.error(f"Error while embedding batch {i // batch_size + 1} : {e}")
-                    continue
+                    try:
+                        try:
+                            embeddings = embedding_generator.generate_embeddings(texts)
+                        except Exception as batch_error:
+                            logger.warning(
+                                f"Batch embedding failed for batch {i // batch_size + 1}: {batch_error}. "
+                                "Falling back to per-chunk embedding."
+                            )
+                            embeddings = []
+                            for text in texts:
+                                try:
+                                    embeddings.append(
+                                        embedding_generator.generate_embeddings([text])[0]
+                                    )
+                                except Exception as item_error:
+                                    logger.error(
+                                        f"Per-chunk embedding fallback failed in batch {i // batch_size + 1}: {item_error}"
+                                    )
+                                    embeddings.append(None)
+
+                        if len(embeddings) != len(valid_chunks):
+                            raise ValueError(
+                                "Embedding count did not match chunk count"
+                            )
+
+                        points = []
+
+                        for chunk, embedding in zip(valid_chunks, embeddings):
+                            if embedding is None:
+                                continue
+
+                            payload = Payload(
+                                repo_id=chunk["repo_id"],
+                                language=chunk["language"],
+                                symbol=chunk["name"],
+                                chunk_type=chunk["symbol_kind"],
+                                module_path=chunk["module_path"],
+                                start_line=chunk["start_line"],
+                                end_line=chunk["end_line"],
+                                parent_class=chunk["parent_class"],
+                                file_path=chunk["file_path"],
+                                code=chunk["code"],
+                                symbol_id=chunk["symbol_id"],
+                                imports=chunk.get("imports", []),
+                                function_calls=chunk.get("function_calls", []),
+                                qualified_name=chunk.get("qualified_name", ""),
+                                children=chunk.get("children", []),
+                                docstring=chunk.get("docstring", ""),
+                                relationships=chunk.get("relationships", {})
+                            )
+
+                            points.append(
+                                PointStruct(
+                                    id=str(
+                                        uuid.uuid5(
+                                            uuid.NAMESPACE_DNS,
+                                            chunk["symbol_id"]
+                                        )
+                                    ),
+                                    vector=embedding,
+                                    payload=asdict(
+                                        payload
+                                    )
+                                )
+                            )
+
+                        client.upsert(
+                            collection_name=self.collection_name,
+                            points=points,
+                            wait=False
+                        )
+
+                        logger.info(
+                            f"Stored batch "
+                            f"{i // batch_size + 1}"
+                        )
+
+                    except Exception as e:
+
+                        logger.error(
+                            f"Qdrant upsert failed: {e}"
+                        )
+
+                else:
+
+                    logger.warning(
+                        f"Batch {i // batch_size + 1} "
+                        f"contained no valid points"
+                    )
 
             logger.info(
                 "Completed Qdrant storage"

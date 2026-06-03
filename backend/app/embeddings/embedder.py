@@ -17,7 +17,8 @@ class EmbeddingGenerator:
 
             response = ollama.embed(
                 model = self.embedding_model,
-                input = texts
+                input = texts,
+                truncate = True
             )            
 
             return response["embeddings"]
