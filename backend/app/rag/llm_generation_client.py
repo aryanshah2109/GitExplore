@@ -1,15 +1,19 @@
+"""Generate final answers with the configured LLM."""
+
 from groq import Groq
 import os
-import time
 from typing import Any
 
 from backend.app.core.logger import get_logger
 from backend.app.intelligence.prompt_templates import LLM_GENERATION_PROMPT
 from backend.app.core.config_loader import config
+from backend.app.utils.groq_retry import groq_completion_with_retry
 
 logger = get_logger()
 
 class LLMGenerationClient:
+    """Wrap the answer model and keep a short conversation history."""
+
     def __init__(self):
         self.client = Groq(
             api_key=os.getenv("GROQ_API_KEY")
@@ -24,34 +28,19 @@ class LLMGenerationClient:
         self.retry_delay_seconds = getattr(config.generation, "retry_delay_seconds", 1.5)
 
     def _create_completion(self, messages: list[dict[str, str]]) -> Any:
-        last_error = None
-
-        for attempt in range(1, self.max_retries + 1):
-            try:
-                return self.client.chat.completions.create(
-                    model=self.model_name,
-                    messages=messages,
-                    temperature=self.temperature,
-                    max_tokens=self.num_predict
-                )
-            except Exception as e:
-                last_error = e
-                error_text = str(e).lower()
-                is_rate_limit = "429" in error_text or "rate limit" in error_text
-
-                if attempt >= self.max_retries or not is_rate_limit:
-                    break
-
-                sleep_for = self.retry_delay_seconds * attempt
-                logger.warning(
-                    f"Groq rate limit hit on generation attempt {attempt}/{self.max_retries}; "
-                    f"retrying in {sleep_for:.1f}s"
-                )
-                time.sleep(sleep_for)
-
-        raise RuntimeError(f"Failed to generate answer after {self.max_retries} attempts: {last_error}")
+        """Call the LLM with simple retry handling for rate limits."""
+        return groq_completion_with_retry(
+            client=self.client,
+            model=self.model_name,
+            messages=messages,
+            temperature=self.temperature,
+            max_tokens=self.num_predict,
+            max_retries=self.max_retries,
+            retry_delay=self.retry_delay_seconds,
+        )
 
     def generate_answer(self, query: str, context: str, query_type: str | None = None) -> str:
+        """Return the model answer for the current query and context."""
 
         logger.info("Generating answer for given query.")
 
@@ -93,6 +82,6 @@ class LLMGenerationClient:
         return answer
 
     def clear_history(self):
-        """Call this when user starts a new repo session."""
+        """Reset the stored chat history for a new repo session."""
         self.history = []
         logger.info("Conversation history cleared.")

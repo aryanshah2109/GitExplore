@@ -1,12 +1,17 @@
+"""Load YAML config and expose it through a small attribute-style wrapper."""
+
 import yaml
 from backend.app.core.path_constants import CONFIG_PATH
 
 
 class Config:
+    """Wrap a nested dict so config values can be read with dotted access."""
+
     def __init__(self, data: dict):
         self._data = data
 
     def __getattr__(self, key: str):
+        """Return a nested config value or raise when the key is missing."""
         if key.startswith("_"):
             raise AttributeError(key)
 
@@ -51,7 +56,7 @@ class Config:
 
 
 def load_config() -> dict:
-    """Load and parse config.yaml, returning a raw dictionary."""
+    """Load `config.yaml` and return the parsed mapping."""
     try:
         with open(CONFIG_PATH, "r") as f:
             data = yaml.safe_load(f)

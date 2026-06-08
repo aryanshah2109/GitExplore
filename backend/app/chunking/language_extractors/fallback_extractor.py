@@ -79,17 +79,7 @@ class FallbackExtractor:
         repo_root: Optional[Path] = None,
         repo_id: Optional[str] = ""
     ) -> List[Symbol]:
-        """
-        Extracts text chunks as semantic symbols.
-
-        Input:
-            file_path: Path
-            repo_root: Optional[Path]
-            repo_id: Optional[str] 
-
-        Output:
-            symbols: List[Symbol]
-        """
+        """Split a text file into symbols that can be embedded and searched."""
 
         try:
 
@@ -171,19 +161,7 @@ class FallbackExtractor:
         repo_root: Optional[Path] = None,
         repo_id: Optional[str] = ""
     ) -> Symbol:
-        """
-        Creates Symbol object for document chunk.
-
-        Input:
-            chunk: str
-            chunk_index: int
-            file_path: Path
-            full_text: str
-            start_byte: int
-
-        Output:
-            Symbol
-        """
+        """Build one symbol record for a text chunk."""
 
         end_byte = start_byte + len(chunk)
 
@@ -270,16 +248,7 @@ class FallbackExtractor:
         text: str,
         separators: List[str]
     ) -> List[str]:
-        """
-        Recursively splits text.
-
-        Input:
-            text: str
-            separators: List[str]
-
-        Output:
-            List[str]
-        """
+        """Split text recursively using the configured separators."""
 
         if len(text) <= self.chunk_size:
             return [text]
@@ -367,15 +336,7 @@ class FallbackExtractor:
         self,
         chunks: List[str]
     ) -> List[str]:
-        """
-        Applies overlap between chunks.
-
-        Input:
-            chunks: List[str]
-
-        Output:
-            List[str]
-        """
+        """Carry a short tail from the previous chunk into the next one."""
 
         if not chunks:
             return []
@@ -408,15 +369,7 @@ class FallbackExtractor:
         self,
         text: str
     ) -> int:
-        """
-        Rough token estimation.
-
-        Input:
-            text: str
-
-        Output:
-            int
-        """
+        """Return a rough token count for chunk sizing."""
 
         return int(len(text.split()) * 1.3)
 
@@ -428,9 +381,7 @@ class FallbackExtractor:
         parent_class: Optional[str],
         code: str
     ) -> str:
-        """
-        Builds embedding text with metadata prefix.
-        """
+        """Build the text that gets embedded for a document chunk."""
 
         prefix_parts = [
             f"File: {file_path.name}",
@@ -452,16 +403,7 @@ class FallbackExtractor:
         file_name: str,
         chunk_index: int
     ) -> str:
-        """
-        Creates unique symbol ID.
-
-        Input:
-            file_name: str
-            chunk_index: int
-
-        Output:
-            symbol_id: str
-        """
+        """Create a unique id for the chunk symbol."""
 
         return (
             f"document:"
@@ -471,6 +413,7 @@ class FallbackExtractor:
         )
 
     def _relative_file_path(self, file_path: Path, repo_root: Optional[Path] = None) -> str:
+        """Return a repo-relative file path when a repo root is known."""
         try:
             if repo_root:
                 return file_path.relative_to(repo_root).as_posix()

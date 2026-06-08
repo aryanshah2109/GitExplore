@@ -1,9 +1,13 @@
+"""Extract JavaScript symbols with the shared Tree-sitter base."""
+
 from backend.app.chunking.language_extractors.tree_sitter_extractor import (
     TreeSitterExtractor,
 )
 
 
 class JSExtractor(TreeSitterExtractor):
+    """Handle standard JavaScript source files."""
+
     language = "javascript"
     parser_language = "javascript"
     import_node_types = {

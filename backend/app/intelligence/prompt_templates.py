@@ -1,3 +1,5 @@
+"""Prompt text used by the query classifier, generator, and judge."""
+
 LLM_GENERATION_PROMPT = """
 You are a concise codebase assistant for repository QA.
 

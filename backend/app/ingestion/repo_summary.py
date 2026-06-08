@@ -1,14 +1,19 @@
+"""Build a small summary chunk from repository metadata and symbols."""
+
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Dict, List, Optional
 
 
 class RepositorySummaryBuilder:
+    """Create one synthetic chunk that describes the whole repository."""
+
     def __init__(self, manifest: Dict, chunks: List[Dict]):
         self.manifest = manifest or {}
         self.chunks = chunks or []
 
     def build_summary_chunk(self) -> Dict:
+        """Return a synthetic chunk that captures the repo shape."""
         repo_id = self.manifest.get("repo_id", "repository")
         languages = self._format_languages()
         directories = self._format_directories()

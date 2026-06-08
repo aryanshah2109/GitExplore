@@ -1,3 +1,5 @@
+"""Run dense retrieval against the Qdrant collection."""
+
 import ollama
 
 from typing import List, Dict, Optional
@@ -18,6 +20,8 @@ logger = get_logger()
 
 
 class DenseRetriever:
+    """Embed the query and fetch the closest stored chunks."""
+
     def __init__(self):
         self.collection_name = config.vector_db.collection_name
         self.embedding_model = config.embedding.model_name
@@ -25,6 +29,7 @@ class DenseRetriever:
         self.query_expander = QueryExpander()
 
     def normalize_text(self, value) -> str:
+        """Turn nested values into plain searchable text."""
         if value is None:
             return ""
 
@@ -44,6 +49,7 @@ class DenseRetriever:
         return str(value).strip().lower()
 
     def build_searchable_text(self, payload: Dict) -> str:
+        """Assemble the fields that should influence exact-match boosts."""
         searchable_fields = [
             payload.get("symbol"),
             payload.get("qualified_name"),
@@ -67,6 +73,7 @@ class DenseRetriever:
         )
 
     def embed_query(self, query: str, query_type: Optional[str] = None) -> List[float]:
+        """Return the embedding vector for the expanded query."""
         try:
             expanded = self.query_expander.expand(query, query_type=query_type)
 
@@ -82,6 +89,7 @@ class DenseRetriever:
             return []
 
     def apply_exact_match_boost(self, query: str, results: List[Retrieval], query_type: Optional[str] = None) -> List[Retrieval]:
+        """Raise scores when the query clearly matches a symbol or file."""
         try:
             expanded = self.query_expander.expand(query, query_type=query_type)
             original_query_text = self.normalize_text(query)
@@ -162,6 +170,7 @@ class DenseRetriever:
             return results
 
     def format_result(self, point) -> Retrieval:
+        """Convert a Qdrant point into the shared retrieval object."""
         payload = point.payload or {}
 
         return Retrieval(
@@ -193,6 +202,7 @@ class DenseRetriever:
         top_k: Optional[int] = None,
         query_type: Optional[str] = None,
     ) -> List[Dict]:
+        """Fetch the best dense matches for a query."""
         try:
             if top_k is None:
                 top_k = self.top_k
@@ -246,6 +256,7 @@ class DenseRetriever:
         top_k: Optional[int] = None,
         query_type: Optional[str] = None
     ) -> List[Dict]:
+        """Compatibility wrapper around `search`."""
         return self.search(
             query=query,
             repo_id=repo_id,

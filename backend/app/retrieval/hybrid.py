@@ -1,3 +1,5 @@
+"""Fuse sparse and dense retrieval results into one ranked list."""
+
 from collections import defaultdict
 from typing import List, Dict
 
@@ -8,11 +10,13 @@ logger = get_logger()
 
 
 class RRFRetriever:
+    """Combine retriever outputs with reciprocal rank fusion."""
 
     def __init__(self):
         self.k = config.hybrid.rrf_k
 
     def deduplicate(self, results: List) -> List:
+        """Drop duplicate chunks that refer to the same base symbol."""
         seen = set()
         deduped = []
         for item in results:
@@ -26,6 +30,7 @@ class RRFRetriever:
         return deduped
 
     def fuse(self, retrieval_results: List[List]) -> List:
+        """Merge multiple retriever outputs into one ordered result list."""
         try:
 
             rrf_scores = defaultdict(float)

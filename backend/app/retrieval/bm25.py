@@ -1,3 +1,5 @@
+"""Run sparse BM25 retrieval over indexed chunks."""
+
 from rank_bm25 import BM25Okapi
 from typing import List, Dict
 import re
@@ -12,6 +14,7 @@ logger = get_logger()
 
 
 class BM25Retriever:
+    """Rank chunks with BM25 after lightly expanding the query."""
 
     def __init__(self, chunks: List[Dict]):
 
@@ -25,6 +28,7 @@ class BM25Retriever:
         self._prepare_documents()
 
     def tokenize(self, text: str):
+        """Split text into simple lowercase tokens for BM25."""
 
         # split camelCase
         text = re.sub(r'([a-z])([A-Z])', r'\1 \2', text)
@@ -39,6 +43,7 @@ class BM25Retriever:
         return tokens
     
     def _prepare_documents(self):
+        """Build the tokenized corpus used by the BM25 scorer."""
 
         logger.info("Preparing BM25 documents")
 
@@ -68,7 +73,15 @@ class BM25Retriever:
         self.bm25 = BM25Okapi(self.tokenized_texts)
 
 
-    def retrieve(self, query: str, exclude_kinds: list = None, top_k: int = None, query_type: str = None) -> List[Retrieval]:
+    def retrieve(
+        self,
+        query: str,
+        exclude_kinds: list = None,
+        top_k: int = None,
+        query_type: str = None,
+        repo_id: str = None,
+    ) -> List[Retrieval]:
+        """Return the top scoring chunks for a query."""
 
         if exclude_kinds is None:
             exclude_kinds = ["document"]
@@ -91,6 +104,9 @@ class BM25Retriever:
                 break
 
             chunk = self.chunks[idx]
+
+            if repo_id and chunk.get("repo_id") != repo_id:
+                continue
 
             # Skip document-type chunks (markdown, rst, text)
             if chunk.get("symbol_kind") in exclude_kinds:

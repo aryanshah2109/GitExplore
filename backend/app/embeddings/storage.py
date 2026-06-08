@@ -1,3 +1,5 @@
+"""Store chunk embeddings and metadata in Qdrant."""
+
 from backend.app.core.config_loader import config
 from backend.app.core.logger import get_logger
 from backend.app.core.qdrant_setup import client
@@ -16,31 +18,13 @@ import uuid
 logger = get_logger()
 
 class StorageToQdrant:
+    """Turn chunk records into Qdrant points and upload them in batches."""
 
     def __init__(self):
         self.collection_name = config.vector_db.collection_name
-
-    def _read_chunks(self):
-
-        try:
-
-            with open(
-                file=self.symbol_path,
-                mode="r",
-                encoding="utf-8"
-            ) as file:
-
-                chunks = json.load(file)
-
-            self.chunks_corpus.extend(chunks)
-
-        except Exception as e:
-            logger.error(f"Error while reading chunks: {e}")
-            raise
-
-
                 
     def store_chunks(self, all_chunks: List[Dict]):
+        """Embed each chunk and write the results into Qdrant."""
 
         try:
 
@@ -176,7 +160,7 @@ class StorageToQdrant:
                         client.upsert(
                             collection_name=self.collection_name,
                             points=points,
-                            wait=False
+                            wait=True
                         )
 
                         logger.info(

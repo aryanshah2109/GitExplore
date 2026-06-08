@@ -1,3 +1,5 @@
+"""Turn retrieval results into a compact prompt context."""
+
 from typing import List, Optional, Dict, Any
 
 from backend.app.retrieval.models.retrieval import Retrieval
@@ -9,12 +11,15 @@ logger = get_logger()
 
 
 class ContextBuilder:
+    """Build the prompt context and keep track of which sources were used."""
+
     def __init__(self):
         self.budget = config.generation.context_budget_tokens
         self.tokenizer = Tokenizer()
         self.last_sources: List[Dict[str, Any]] = []
 
     def _format_value(self, value) -> str:
+        """Render nested metadata into a short flat string."""
         if value is None:
             return ""
 
@@ -37,6 +42,7 @@ class ContextBuilder:
         return str(value).strip()
 
     def build_context(self, results: List[Retrieval], budget: Optional[int] = None) -> str:
+        """Assemble retrieval snippets until the token budget is used up."""
         try:
             max_budget = budget or self.budget
             context_parts = []
@@ -83,6 +89,7 @@ class ContextBuilder:
             return ""
 
     def _build_snippet(self, source_id: int, retrieval: Retrieval, metadata: Dict[str, Any]) -> str:
+        """Create the text block that is fed to the generation model."""
         docstring = self._truncate(self._format_value(metadata.get("docstring")), 600)
         code = self._truncate(retrieval.code or "", 2500)
 
@@ -104,6 +111,7 @@ Code:
 """.strip()
 
     def _truncate(self, text: str, max_chars: int) -> str:
+        """Trim long text to a safe length for prompts."""
         if len(text) <= max_chars:
             return text
         return text[: max_chars - 3].rstrip() + "..."

@@ -1,3 +1,5 @@
+"""Orchestrate retrieval, answer generation, and answer judging."""
+
 from collections import defaultdict
 from typing import List, Dict, Any, Optional, Tuple
 
@@ -19,6 +21,8 @@ logger = get_logger()
 
 
 class RAGPipeline:
+    """Run the full retrieval and generation flow for one query."""
+
     def __init__(self, chunks: List[Dict], repo_id: str):
         self.chunks = chunks
         self.repo_id = repo_id
@@ -39,6 +43,7 @@ class RAGPipeline:
         ]
 
     def query(self, user_query: str) -> dict:
+        """Run retrieval, generation, citation fixing, and judging."""
         try:
             query_type = detect_query_type(user_query)
             logger.info(f"Query type: {query_type}")
@@ -57,6 +62,7 @@ class RAGPipeline:
                 exclude_kinds=retrieval_plan["exclude_kinds"],
                 top_k=retrieval_plan["bm25_top_k"],
                 query_type=query_type,
+                repo_id=self.repo_id,
             )
             self._log_results("BM25", bm25_results)
 
@@ -69,6 +75,8 @@ class RAGPipeline:
             self._log_results("Dense", dense_results)
 
             hybrid_results = self.rrf.fuse([bm25_results, dense_results])
+            if not hybrid_results:
+                hybrid_results = bm25_results or dense_results or []
             hybrid_results = self._inject_summary_chunks(
                 hybrid_results,
                 query_type=query_type,
@@ -150,7 +158,7 @@ class RAGPipeline:
             }
 
     def clear_session(self):
-        """Call when user switches repos."""
+        """Clear chat history when the active repo changes."""
         self.llm.clear_history()
 
     def _retrieval_plan(self, query_type: str) -> Dict[str, Any]:
@@ -173,7 +181,8 @@ class RAGPipeline:
             dense_top_k = max(dense_top_k, int(getattr(architecture_config, "dense_top_k", 40)) if architecture_config else 40)
             rerank_top_k = max(rerank_top_k, int(getattr(architecture_config, "rerank_top_k", 12)) if architecture_config else 12)
             summary_top_k = max(summary_top_k, 1)
-            context_budget_tokens = int(getattr(architecture_config, "context_budget_tokens", context_budget_tokens * 1.5)) if architecture_config else int(context_budget_tokens * 1.5)
+            arch_budget = getattr(architecture_config, "context_budget_tokens", None) if architecture_config else None
+            context_budget_tokens = int(arch_budget) if arch_budget else int(context_budget_tokens * 1.5)
             expanded_related_limit = max(expanded_related_limit, int(getattr(architecture_config, "expanded_related_limit", 12)) if architecture_config else 12)
             expansion_depth = max(expansion_depth, int(getattr(architecture_config, "expansion_depth", 2)) if architecture_config else 2)
 
@@ -262,7 +271,7 @@ class RAGPipeline:
 
             for related_id in related_ids:
                 base_related_id = self._base_chunk_id(related_id)
-                if base_related_id in seen or base_related_id in seed_ids and current_depth > 0:
+                if base_related_id in seen or (base_related_id in seed_ids and current_depth > 0):
                     continue
 
                 related_chunk = self._pick_chunk_by_id(related_id)

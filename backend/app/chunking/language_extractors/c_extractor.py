@@ -1,9 +1,13 @@
+"""Extract C symbols with the shared Tree-sitter base."""
+
 from backend.app.chunking.language_extractors.tree_sitter_extractor import (
     TreeSitterExtractor,
 )
 
 
 class CExtractor(TreeSitterExtractor):
+    """Handle standard C source files."""
+
     language = "c"
     parser_language = "c"
     import_node_types = {

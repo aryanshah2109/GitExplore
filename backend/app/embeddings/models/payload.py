@@ -1,9 +1,12 @@
+"""Dataclass that matches the payload stored in Qdrant."""
+
 from dataclasses import dataclass, field
 from typing import Optional, Dict, List
 
 
 @dataclass
 class Payload:
+    """Store the metadata and source text for a single indexed chunk."""
 
     repo_id: str
 

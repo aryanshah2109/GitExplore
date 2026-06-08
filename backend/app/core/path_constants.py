@@ -1,3 +1,5 @@
+"""Central place for the filesystem paths used by the backend."""
+
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parents[2]

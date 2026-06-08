@@ -1,6 +1,4 @@
-"""
-    Creates manifest for cloned repository files and saves it in directory
-"""
+"""Build a manifest for a cloned repository and save it to disk."""
 
 from uuid import uuid4
 import json
@@ -18,12 +16,7 @@ from backend.app.core.path_constants import MANIFESTS_DIR
 logger = get_logger()
 
 class ManifestBuilder:
-    """
-        Class to build manifest for cloned repository
-
-        Input: repo_root: Path, repo_url: str, branch_name: str
-        Output: manifests_dir: Path
-    """
+    """Scan a repo and collect the file list used by later stages."""
 
     def __init__(self, repo_root: Path, repo_url: str, branch_name: str):
         MANIFESTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -40,11 +33,7 @@ class ManifestBuilder:
         
 
     def get_relative_path(self, file_path: Path, repo_root: Path) -> str:
-        """
-            Returns relative path of a file path with respect to a root path
-            Input: file_path (pathlib.Path), repo_root (pathlib.Path)
-            Output: relative_path (str)
-        """
+        """Return `file_path` relative to `repo_root` when possible."""
 
         try:
             return str(file_path.relative_to(repo_root))
@@ -52,9 +41,7 @@ class ManifestBuilder:
             return str(file_path)
 
     def build_manifest(self) -> Path:
-        """
-            Builds manifest of a repository and returns path        
-        """
+        """Walk the repo, collect metadata, and write the manifest JSON."""
 
         try:
 

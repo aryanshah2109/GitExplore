@@ -1,3 +1,5 @@
+"""Map file extensions to the extractor class that can handle them."""
+
 from backend.app.chunking.language_extractors.python_extractor import PyExtractor
 from backend.app.chunking.language_extractors.c_extractor import CExtractor
 from backend.app.chunking.language_extractors.cpp_extractor import CPPExtractor
@@ -47,6 +49,7 @@ LANGUAGE_REGISTRY = {
 
 
 def get_extractor(extension: str):
+    """Return the extractor class for a file extension, or fallback."""
     normalized_extension = (extension or "").lower()
     if normalized_extension and not normalized_extension.startswith("."):
         normalized_extension = f".{normalized_extension}"

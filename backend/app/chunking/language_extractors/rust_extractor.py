@@ -1,9 +1,13 @@
+"""Extract Rust symbols with the shared Tree-sitter base."""
+
 from backend.app.chunking.language_extractors.tree_sitter_extractor import (
     TreeSitterExtractor,
 )
 
 
 class RustExtractor(TreeSitterExtractor):
+    """Handle standard Rust source files."""
+
     language = "rust"
     parser_language = "rust"
     import_node_types = {

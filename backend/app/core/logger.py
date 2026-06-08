@@ -1,3 +1,5 @@
+"""Configure the shared application logger with console and file output."""
+
 import logging
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
@@ -9,10 +11,12 @@ LOG_NAME = config.get("logging").get("name", "gitexplore")
 
 
 def get_logger():
+    """Return the shared logger used across the backend."""
     return logging.getLogger(LOG_NAME)
 
 
 def configure_logger():
+    """Set up the shared logger with the configured log level and handlers."""
     try:
         # create logs directory
         LOGS_DIR.mkdir(parents=True, exist_ok=True)

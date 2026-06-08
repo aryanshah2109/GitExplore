@@ -1,3 +1,5 @@
+"""Split large chunks into smaller token-safe pieces before indexing."""
+
 from typing import List, Dict
 
 from backend.app.core.config_loader import config
@@ -5,6 +7,8 @@ from backend.app.utils.tokenizer import Tokenizer
 
 
 class ChunkSplitter:
+    """Break long chunk payloads into smaller pieces with overlap."""
+
     def __init__(self):
         self.max_tokens = min(
             config.chunking.max_tokens,
@@ -17,6 +21,7 @@ class ChunkSplitter:
         self,
         chunk: Dict
     ) -> List[Dict]:
+        """Split one chunk and keep its metadata on every piece."""
 
         embedding_text = chunk.get(
             "embedding_text",
@@ -77,6 +82,7 @@ class ChunkSplitter:
         self,
         chunks: List[Dict]
     ) -> List[Dict]:
+        """Split every chunk and apply a fallback split when needed."""
 
         result = []
 

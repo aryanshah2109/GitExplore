@@ -1,9 +1,13 @@
+"""Extract C++ symbols with the shared Tree-sitter base."""
+
 from backend.app.chunking.language_extractors.tree_sitter_extractor import (
     TreeSitterExtractor,
 )
 
 
 class CPPExtractor(TreeSitterExtractor):
+    """Handle standard C++ source files."""
+
     language = "cpp"
     parser_language = "cpp"
     import_node_types = {

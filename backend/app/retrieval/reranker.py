@@ -1,3 +1,5 @@
+"""Reorder retrieved chunks with Cohere reranking."""
+
 import cohere
 from typing import List
 import os
@@ -9,6 +11,8 @@ from backend.app.retrieval.models.retrieval import Retrieval
 logger = get_logger()
 
 class Reranker:
+    """Use a reranking model to sort the most relevant chunks first."""
+
     def __init__(self):
         self.top_k = config.reranker.top_k
         self.model_name = config.reranker.model_name
@@ -19,6 +23,7 @@ class Reranker:
         self,
         chunk: Retrieval
     ) -> str:
+        """Build the text snippet sent to the reranker."""
         try:
             metadata = chunk.metadata or {}
 
@@ -46,6 +51,7 @@ class Reranker:
 
     
     def rerank(self, query: str, chunks: List[Retrieval], top_n: int = None):
+        """Return the reranked chunks, or the input order on failure."""
         try:
             logger.info(f"Reranking {len(chunks)} chunks")
 

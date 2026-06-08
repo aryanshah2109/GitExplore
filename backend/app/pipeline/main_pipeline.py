@@ -1,3 +1,5 @@
+"""Manual end-to-end script for running ingestion and RAG on one repo."""
+
 from dotenv import load_dotenv
 
 load_dotenv()

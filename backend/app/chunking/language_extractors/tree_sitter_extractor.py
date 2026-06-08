@@ -49,6 +49,7 @@ class TreeSitterExtractor:
         repo_root: Optional[Path] = None,
         repo_id: Optional[str] = ""
     ) -> List[Symbol]:
+        """Parse one file and return the symbols discovered inside it."""
 
         try:
 
@@ -144,6 +145,7 @@ class TreeSitterExtractor:
         repo_root: Optional[Path],
         repo_id: Optional[str]
     ) -> None:
+        """Walk the tree and collect class, function, and import symbols."""
 
         if node.type == "decorated_definition":
 
@@ -251,6 +253,7 @@ class TreeSitterExtractor:
         repo_root: Optional[Path] = None,
         repo_id: Optional[str] = ""
     ) -> Symbol:
+        """Build one symbol record from a tree-sitter node."""
 
         code = self._get_node_text(
             node=node,
@@ -395,6 +398,7 @@ class TreeSitterExtractor:
         repo_root: Optional[Path] = None,
         repo_id: Optional[Path] = ""
     ) -> Symbol:
+        """Create a module-level symbol from top-level file code."""
 
         module_name = file_path.stem
 
@@ -476,6 +480,7 @@ class TreeSitterExtractor:
         root_node: Node,
         source_code: bytes
     ) -> str:
+        """Collect top-level code that is not part of a class or function."""
 
         blocks = []
 
@@ -664,6 +669,7 @@ class TreeSitterExtractor:
         return None
 
     def _build_module_path(self, file_path: Path, repo_root: Optional[Path] = None) -> str:
+        """Return a dotted module path for a file when possible."""
         try:
             if repo_root:
                 relative = file_path.relative_to(repo_root).with_suffix("")
@@ -1084,9 +1090,7 @@ class TreeSitterExtractor:
         parent_class: Optional[str],
         code: str
     ) -> str:
-        """
-        Builds enriched embedding text.
-        """
+        """Build the text that gets embedded and indexed."""
 
         prefix_parts = [
             f"File: {file_path.name}",
@@ -1109,6 +1113,7 @@ class TreeSitterExtractor:
         file_path: Path,
         repo_root: Optional[Path] = None
     ) -> str:
+        """Return a repo-relative file path when a repo root is known."""
         try:
             if repo_root:
                 return file_path.relative_to(repo_root).as_posix()

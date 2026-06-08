@@ -1,3 +1,5 @@
+"""Read a manifest and run the right extractor for each file."""
+
 from dataclasses import asdict
 from pathlib import Path
 import json
@@ -11,17 +13,13 @@ logger = get_logger()
 
 
 class ASTTraverser:
-    """
-    Traverses repository files and extracts semantic symbols.
-    """
+    """Traverse repository files and write extracted symbols to disk."""
 
     def __init__(self, manifest_path: Path):
         self.manifest_path = manifest_path
 
     def read_manifest_file(self) -> dict:
-        """
-        Reads repository manifest file.
-        """
+        """Load the manifest JSON into memory."""
 
         try:
 
@@ -35,9 +33,7 @@ class ASTTraverser:
             return {}
 
     def symbol_extraction(self):
-        """
-        Extracts symbols from all repository files.
-        """
+        """Extract symbols for each file listed in the manifest."""
 
         try:
 

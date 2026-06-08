@@ -1,9 +1,13 @@
+"""Extract Python symbols with the shared Tree-sitter base."""
+
 from backend.app.chunking.language_extractors.tree_sitter_extractor import (
     TreeSitterExtractor,
 )
 
 
 class PyExtractor(TreeSitterExtractor):
+    """Handle standard Python source files."""
+
     language = "python"
     parser_language = "python"
     import_node_types = {

@@ -1,3 +1,5 @@
+"""Extract TypeScript symbols with a small TSX override."""
+
 from pathlib import Path
 
 from backend.app.chunking.language_extractors.tree_sitter_extractor import (
@@ -6,6 +8,8 @@ from backend.app.chunking.language_extractors.tree_sitter_extractor import (
 
 
 class TSExtractor(TreeSitterExtractor):
+    """Handle TypeScript and TSX source files."""
+
     language = "typescript"
     parser_language = "typescript"
     import_node_types = {
@@ -36,6 +40,7 @@ class TSExtractor(TreeSitterExtractor):
         self,
         file_path: Path
     ) -> str:
+        """Use the TSX parser for `.tsx` files."""
         if file_path.suffix.lower() == ".tsx":
             return "tsx"
 

@@ -1,3 +1,5 @@
+"""Classify user queries so the pipeline can pick a better retrieval plan."""
+
 import os
 from groq import Groq
 from backend.app.core.logger import get_logger
@@ -6,15 +8,17 @@ from backend.app.core.config_loader import config
 
 logger = get_logger()
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
 VALID_TYPES = config.query.types
 
 MODEL_NAME = config.query.model_name
 
+def get_client():
+    return Groq(api_key=os.getenv("GROQ_API_KEY"))
+
 def detect_query_type(query: str) -> str:
+    """Return the detected query type, or fall back to explain_code."""
     try:
-        response = client.chat.completions.create(
+        response = get_client().chat.completions.create(
             model= MODEL_NAME,
             messages=[
                 {"role": "system", "content": CLASSIFIER_PROMPT},

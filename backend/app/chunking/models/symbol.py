@@ -1,8 +1,12 @@
+"""Dataclass that holds the extracted symbol metadata."""
+
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 
 @dataclass
 class Symbol:
+    """Store one extracted symbol, its code, and its search metadata."""
+
     repo_id: str
 
     symbol_id: str

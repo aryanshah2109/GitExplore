@@ -1,3 +1,5 @@
+"""Create and reuse the Qdrant client used for vector storage."""
+
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance
 
@@ -8,6 +10,8 @@ from backend.app.core.exceptions import QdrantSetupException
 logger = get_logger()
 
 class QdrantSetup():
+    """Connect to Qdrant and create the collection when it is missing."""
+
     def __init__(self):
         self.host = config.vector_db.host
         self.port = config.vector_db.port
@@ -16,6 +20,7 @@ class QdrantSetup():
 
 
     def setup(self):
+        """Return a ready Qdrant client for the configured collection."""
 
         logger.info("Setting Qdrant up")
 

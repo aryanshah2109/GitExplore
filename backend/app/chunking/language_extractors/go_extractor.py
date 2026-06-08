@@ -1,9 +1,13 @@
+"""Extract Go symbols with the shared Tree-sitter base."""
+
 from backend.app.chunking.language_extractors.tree_sitter_extractor import (
     TreeSitterExtractor,
 )
 
 
 class GoExtractor(TreeSitterExtractor):
+    """Handle standard Go source files."""
+
     language = "go"
     parser_language = "go"
     import_node_types = {

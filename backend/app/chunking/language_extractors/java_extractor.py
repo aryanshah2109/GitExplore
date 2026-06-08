@@ -1,9 +1,13 @@
+"""Extract Java symbols with the shared Tree-sitter base."""
+
 from backend.app.chunking.language_extractors.tree_sitter_extractor import (
     TreeSitterExtractor,
 )
 
 
 class JavaExtractor(TreeSitterExtractor):
+    """Handle standard Java source files."""
+
     language = "java"
     parser_language = "java"
     import_node_types = {

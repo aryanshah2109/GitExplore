@@ -1,12 +1,17 @@
+"""Replace model citation markers with readable source references."""
+
 import re
 from typing import Dict, List, Tuple
 
 
 class CitationResolver:
+    """Map source ids in answers back to file and symbol details."""
+
     def __init__(self, source_map: List[Dict]):
         self.source_map = {int(item["source_id"]): item for item in source_map}
 
     def resolve(self, answer: str) -> Tuple[str, List[int]]:
+        """Rewrite citation tags and report any missing source ids."""
         invalid_sources: List[int] = []
 
         def replacement(match: re.Match) -> str:

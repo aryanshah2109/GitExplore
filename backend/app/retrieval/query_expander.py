@@ -1,3 +1,5 @@
+"""Expand search queries with small text variations and hints."""
+
 import re
 from dataclasses import dataclass
 from typing import List, Set
@@ -7,12 +9,15 @@ from backend.app.core.config_loader import config
 
 @dataclass
 class QueryExpansionResult:
+    """Hold the original query and the expanded search text."""
     original_query: str
     expanded_terms: List[str]
     expanded_query_text: str
 
 
 class QueryExpander:
+    """Generate a short list of useful query variants."""
+
     def __init__(self):
         retrieval_config = getattr(config, "retrieval", None)
         query_expansion_config = getattr(retrieval_config, "query_expansion", None) if retrieval_config else None
@@ -21,6 +26,7 @@ class QueryExpander:
         self.max_terms = int(getattr(query_expansion_config, "max_terms", 12)) if query_expansion_config else 12
 
     def expand(self, query: str, query_type: str | None = None) -> QueryExpansionResult:
+        """Return the query plus a small set of extra search terms."""
         if not self.enabled:
             return QueryExpansionResult(
                 original_query=query,
@@ -37,6 +43,7 @@ class QueryExpander:
         )
 
     def _build_terms(self, query: str, query_type: str | None = None) -> List[str]:
+        """Collect the best matching variants until the limit is reached."""
         raw_tokens = self._tokenize(query)
         variants: List[str] = []
         seen: Set[str] = set()
@@ -62,11 +69,13 @@ class QueryExpander:
         return variants
 
     def _tokenize(self, query: str) -> List[str]:
+        """Split the query into simple searchable tokens."""
         query = re.sub(r"([a-z])([A-Z])", r"\1 \2", query)
         query = query.replace("_", " ")
         return re.findall(r"\b[\w/.-]+\b", query)
 
     def _variants_for_token(self, token: str) -> List[str]:
+        """Return small spelling and word-shape variants for one token."""
         token = token.strip()
         if not token:
             return []
@@ -88,6 +97,7 @@ class QueryExpander:
         return variants
 
     def _generic_variants(self, query_type: str | None) -> List[str]:
+        """Add a few broad hints based on the query type."""
         if query_type == "find_function":
             return ["definition", "implementation", "location", "defined", "declared"]
         if query_type == "explain_code":
