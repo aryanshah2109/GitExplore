@@ -7,6 +7,8 @@ from backend.app.core.config_loader import config
 from backend.app.core.logger import get_logger
 from backend.app.core.exceptions import QdrantSetupException
 
+import os
+
 logger = get_logger()
 
 class QdrantSetup():
@@ -26,8 +28,8 @@ class QdrantSetup():
 
         try:
             client = QdrantClient(
-                host = self.host,
-                port = self.port
+                url=os.getenv("QDRANT_URL"),
+                api_key=os.getenv("QDRANT_API_KEY"),
             )
 
             collections = client.get_collections().collections
