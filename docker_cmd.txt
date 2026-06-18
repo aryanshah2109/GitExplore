@@ -1,9 +1,0 @@
-docker run -d `
-  --name qdrant `
-  -p 6333:6333 `
-  -v qdrant_storage:/qdrant/storage `
-  qdrant/qdrant
-
-uvicorn backend.api.main:app --reload --reload-dir backend
-
-streamlit run frontend/app.py
