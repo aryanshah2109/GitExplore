@@ -251,7 +251,7 @@ generation:
   provider: "groq"
   model_name: "llama-3.1-8b-instant"
   temperature: 0.2
-  num_predict: 512
+  num_predict: 1024
   context_budget_tokens: 1000
   conversation_history_turns: 1
   max_retries: 2

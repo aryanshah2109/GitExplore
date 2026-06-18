@@ -3,3 +3,11 @@ docker run -d `
   -p 6333:6333 `
   -v qdrant_storage:/qdrant/storage `
   qdrant/qdrant
+
+uvicorn backend.api.main:app \
+  --reload \
+  --reload-exclude "backend/data/repos/*" \
+  --reload-exclude "backend/data/symbols/*" \
+  --reload-exclude "backend/data/manifests/*"
+
+streamlit run frontend/app.py

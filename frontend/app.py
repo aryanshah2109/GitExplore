@@ -23,13 +23,33 @@ def repo_name_from_url(repo_url: str) -> str:
 
 def post_json(path: str, payload: dict) -> dict:
     response = requests.post(api_url(path), json=payload, timeout=600)
-    response.raise_for_status()
+
+    if not response.ok:
+        try:
+            error = response.json()
+            detail = error.get("detail", "Unknown error")
+            raise RuntimeError(detail)
+        except ValueError:
+            raise RuntimeError(
+                f"Request failed ({response.status_code}): {response.text}"
+            )
+
     return response.json()
 
 
 def delete_request(path: str) -> dict:
     response = requests.delete(api_url(path), timeout=60)
-    response.raise_for_status()
+
+    if not response.ok:
+        try:
+            error = response.json()
+            detail = error.get("detail", "Unknown error")
+            raise RuntimeError(detail)
+        except ValueError:
+            raise RuntimeError(
+                f"Request failed ({response.status_code}): {response.text}"
+            )
+
     return response.json()
 
 
@@ -42,11 +62,16 @@ st.session_state.setdefault("repo_name", "")
 st.session_state.setdefault("answer", "")
 st.session_state.setdefault("judgement", None)
 st.session_state.setdefault("query_type", "")
+st.session_state.setdefault("query", "")
 
 with st.sidebar:
     st.header("Ingest Repository")
     repo_url = st.text_input("GitHub URL", placeholder="https://github.com/user/repo")
-    branch = st.text_input("Branch", value="main")
+    branch = st.text_input(
+        "Branch",
+        value="",
+        placeholder="Leave empty to use repository default branch",
+    )
 
     if st.button("Ingest", use_container_width=True):
         if not repo_url.strip():
@@ -56,33 +81,47 @@ with st.sidebar:
                 with st.spinner("Ingesting repository..."):
                     result = post_json(
                         "/api/v1/ingest",
-                        {"repo_url": repo_url.strip(), "branch": branch.strip() or "main"},
+                        {"repo_url": repo_url.strip(), "branch": branch.strip()},
                     )
                 st.session_state.repo_id = result["repo_id"]
                 st.session_state.repo_name = repo_name_from_url(repo_url)
+                st.session_state.answer = ""
+                st.session_state.judgement = None
+                st.session_state.query_type = ""
+                st.session_state.query = ""
                 st.success(f"Indexed {result['file_count']} files into {result['chunk_count']} chunks.")
             except Exception as e:
                 st.error(str(e))
 
     if st.session_state.get("repo_id"):
         st.success(f"Active: {st.session_state.get('repo_name')}")
+
         if st.button("Clear Session", use_container_width=True):
             try:
                 delete_request(f"/api/v1/session/{st.session_state['repo_id']}")
+
                 st.session_state.repo_id = ""
                 st.session_state.repo_name = ""
                 st.session_state.answer = ""
                 st.session_state.judgement = None
                 st.session_state.query_type = ""
-                st.success("Session cleared.")
+                st.session_state.query = ""
+
+                st.rerun()
             except Exception as e:
                 st.error(str(e))
 
 query = st.text_input(
     "Ask something about the repository",
+    key="query",
     disabled=not bool(st.session_state.get("repo_id")),
 )
-ask_btn = st.button("Ask", disabled=not bool(st.session_state.get("repo_id")), type="primary")
+
+ask_btn = st.button(
+    "Ask",
+    disabled=not bool(st.session_state.get("repo_id")),
+    type="primary",
+)
 
 if ask_btn:
     if not query.strip():
@@ -94,9 +133,11 @@ if ask_btn:
                     "/api/v1/query",
                     {"repo_id": st.session_state["repo_id"], "query": query.strip()},
                 )
+
             st.session_state.answer = result["answer"]
             st.session_state.judgement = result["judgement"]
             st.session_state.query_type = result.get("query_type", "")
+
         except Exception as e:
             st.error(str(e))
 
@@ -105,7 +146,9 @@ if st.session_state.get("answer"):
 
     with st.expander("Answer Quality Scores"):
         judgement = st.session_state.get("judgement") or {}
+
         col1, col2, col3, col4 = st.columns(4)
+
         col1.metric("Faithfulness", judgement.get("faithfulness", 0))
         col2.metric("Retrieval Relevance", judgement.get("retrieval_relevance", 0))
         col3.metric("Citation Accuracy", judgement.get("citation_accuracy", 0))
@@ -113,4 +156,3 @@ if st.session_state.get("answer"):
 
     with st.expander("Judge Reasoning"):
         st.write((st.session_state.get("judgement") or {}).get("reasoning", ""))
-
