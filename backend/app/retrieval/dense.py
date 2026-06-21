@@ -1,7 +1,5 @@
 """Run dense retrieval against the Qdrant collection."""
 
-import ollama
-
 from typing import List, Dict, Optional
 
 from qdrant_client.models import (
@@ -13,6 +11,7 @@ from qdrant_client.models import (
 from backend.app.core.config_loader import config
 from backend.app.core.qdrant_setup import client
 from backend.app.core.logger import get_logger
+from backend.app.embeddings.embedder import embedding_generator
 from backend.app.retrieval.models.retrieval import Retrieval
 from backend.app.retrieval.query_expander import QueryExpander
 
@@ -24,7 +23,6 @@ class DenseRetriever:
 
     def __init__(self):
         self.collection_name = config.vector_db.collection_name
-        self.embedding_model = config.embedding.model_name
         self.top_k = config.vector_db.top_k
         self.query_expander = QueryExpander()
 
@@ -76,13 +74,12 @@ class DenseRetriever:
         """Return the embedding vector for the expanded query."""
         try:
             expanded = self.query_expander.expand(query, query_type=query_type)
-
-            response = ollama.embed(
-                model=self.embedding_model,
-                input=expanded.expanded_query_text
+            embeddings = embedding_generator.generate_embeddings(
+                [expanded.expanded_query_text]
             )
-
-            return response["embeddings"][0]
+            if not embeddings:
+                return []
+            return embeddings[0]
 
         except Exception:
             logger.exception("Error generating query embedding")

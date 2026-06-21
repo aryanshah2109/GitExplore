@@ -197,8 +197,8 @@ chunking:
   overlap_tokens: 32
 
 embedding:
-  provider: "ollama"
-  model_name: "nomic-embed-text"
+  provider: "sentence_transformers"
+  model_name: "nomic-ai/nomic-embed-code"
   batch_size: 16
   normalize: true
   size: 768
